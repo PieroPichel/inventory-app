@@ -1,3 +1,4 @@
+import SharedModal from "./SharedModal";
 import { databases, ID } from "../appwrite";
 
 const DB_ID = "697dcef40009d64e2fe1";
@@ -54,103 +55,72 @@ export default function InventoryAddForm({
   };
 
   return (
-    <Modal
-      title="Add New Item"
-      item={item}
-      setItem={setItem}
-      onSave={save}
-      onCancel={onClose}
-      errorMessage={errorMessage}
-      CATEGORY_OPTIONS={CATEGORY_OPTIONS}
-      LIFE_OPTIONS={LIFE_OPTIONS}
-    />
+    <SharedModal title="Add New Item" onCancel={onClose}>
+      {errorMessage && <div style={errBox}>{errorMessage}</div>}
+
+      {field("Item *", "text", item.Item, (v) => setItem({ ...item, Item: v }))}
+      {field("Stock Type", "text", item.stock_type, (v) =>
+        setItem({ ...item, stock_type: v })
+      )}
+
+      <label>Category *</label>
+      <select
+        value={item.Category}
+        onChange={(e) => setItem({ ...item, Category: e.target.value })}
+        style={input}
+      >
+        {CATEGORY_OPTIONS.map((c) => (
+          <option key={c}>{c}</option>
+        ))}
+      </select>
+
+      {field("Subcategory *", "text", item.subcategory, (v) =>
+        setItem({ ...item, subcategory: v })
+      )}
+
+      <label>Life *</label>
+      <select
+        value={item.life}
+        onChange={(e) => setItem({ ...item, life: e.target.value })}
+        style={input}
+      >
+        {LIFE_OPTIONS.map((l) => (
+          <option key={l}>{l}</option>
+        ))}
+      </select>
+
+      {field("Quantity *", "number", item.quantity, (v) =>
+        setItem({ ...item, quantity: v })
+      )}
+
+      {field("Min Stock", "number", item.Min_Stock, (v) =>
+        setItem({ ...item, Min_Stock: v })
+      )}
+
+      {field("Unit *", "text", item.Unit, (v) =>
+        setItem({ ...item, Unit: v })
+      )}
+
+      {field("Storage Location", "text", item.storage_location, (v) =>
+        setItem({ ...item, storage_location: v })
+      )}
+
+      <label>Expiry Date</label>
+      <input
+        type="date"
+        value={item.expiry_date || ""}
+        onChange={(e) =>
+          setItem({ ...item, expiry_date: e.target.value })
+        }
+        style={input}
+      />
+
+      <button onClick={save} style={saveBtn}>Save</button>
+    </SharedModal>
   );
 }
 
-/* ---------------------- SHARED MODAL ---------------------- */
-
-function Modal({
-  title,
-  item,
-  setItem,
-  onSave,
-  onCancel,
-  errorMessage,
-  CATEGORY_OPTIONS,
-  LIFE_OPTIONS,
-}) {
-  return (
-    <div style={overlay}>
-      <div style={box}>
-        <h3>{title}</h3>
-
-        {errorMessage && <div style={errBox}>{errorMessage}</div>}
-
-        {field("Item *", "text", item.Item, (v) => setItem({ ...item, Item: v }))}
-        {field("Stock Type", "text", item.stock_type, (v) =>
-          setItem({ ...item, stock_type: v })
-        )}
-
-        <label>Category *</label>
-        <select
-          value={item.Category}
-          onChange={(e) => setItem({ ...item, Category: e.target.value })}
-          style={input}
-        >
-          {CATEGORY_OPTIONS.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-
-        {field("Subcategory *", "text", item.subcategory, (v) =>
-          setItem({ ...item, subcategory: v })
-        )}
-
-        <label>Life *</label>
-        <select
-          value={item.life}
-          onChange={(e) => setItem({ ...item, life: e.target.value })}
-          style={input}
-        >
-          {LIFE_OPTIONS.map((l) => (
-            <option key={l}>{l}</option>
-          ))}
-        </select>
-
-        {field("Quantity *", "number", item.quantity, (v) =>
-          setItem({ ...item, quantity: v })
-        )}
-
-        {field("Min Stock", "number", item.Min_Stock, (v) =>
-          setItem({ ...item, Min_Stock: v })
-        )}
-
-        {field("Unit *", "text", item.Unit, (v) =>
-          setItem({ ...item, Unit: v })
-        )}
-
-        {field("Storage Location", "text", item.storage_location, (v) =>
-          setItem({ ...item, storage_location: v })
-        )}
-
-        <label>Expiry Date</label>
-        <input
-          type="date"
-          value={item.expiry_date || ""}
-          onChange={(e) =>
-            setItem({ ...item, expiry_date: e.target.value })
-          }
-          style={input}
-        />
-
-        <button onClick={onSave} style={saveBtn}>Save</button>
-        <button onClick={onCancel} style={cancelBtn}>Cancel</button>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------- SMALL HELPERS ---------------------- */
+/* ---------------------- HELPERS ---------------------- */
 
 const field = (label, type, value, onChange) => (
   <>
@@ -165,27 +135,6 @@ const field = (label, type, value, onChange) => (
 );
 
 /* ---------------------- STYLES ---------------------- */
-
-const overlay = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100%",
-  height: "100%",
-  background: "rgba(0,0,0,0.7)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 1000,
-};
-
-const box = {
-  background: "#1e1e1e",
-  padding: "20px",
-  borderRadius: "8px",
-  width: "90%",
-  maxWidth: "400px",
-};
 
 const input = {
   width: "100%",
@@ -215,15 +164,3 @@ const saveBtn = {
   cursor: "pointer",
   marginTop: "10px",
 };
-
-const cancelBtn = {
-  padding: "10px",
-  width: "100%",
-  background: "#444",
-  border: "none",
-  color: "#fff",
-  borderRadius: "6px",
-  cursor: "pointer",
-  marginTop: "10px",
-};
-

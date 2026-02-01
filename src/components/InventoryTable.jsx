@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { databases, ID } from "../appwrite";
 import { Query } from "appwrite";
+
 import InventoryAddForm from "./InventoryAddForm";
 import InventoryEditForm from "./InventoryEditForm";
+import InventoryRow from "./InventoryRow";
 
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
@@ -247,51 +249,15 @@ export default function InventoryTable({ selectedHouse }) {
 
         <tbody>
           {sortedItems.map((item) => (
-            <tr key={item.$id} style={getRowStyle(item)}>
-              <td style={td}>
-                {item["Item"]} {getAlertBadge(item)}
-              </td>
-              <td style={td}>{item["stock_type"]}</td>
-              <td style={td}>{item["Category"]}</td>
-              <td style={td}>{item["subcategory"]}</td>
-              <td style={td}>{item["life"]}</td>
-              <td style={td}>{item["quantity"]}</td>
-              <td style={td}>{item["Min_Stock"]}</td>
-              <td style={td}>{item["Unit"]}</td>
-              <td style={td}>{item["storage_location"]}</td>
-              <td style={td}>{formatDate(item["expiry_date"])}</td>
-
-              <td style={td}>
-                <button
-                  onClick={() => openEditModal(item)}
-                  style={{
-                    background: "#444",
-                    color: "#fff",
-                    border: "none",
-                    padding: "6px 10px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    marginRight: "6px",
-                  }}
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() => deleteItem(item.$id)}
-                  style={{
-                    background: "#b30000",
-                    color: "#fff",
-                    border: "none",
-                    padding: "6px 10px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
+            <InventoryRow
+              key={item.$id}
+              item={item}
+              formatDate={formatDate}
+              getAlertBadge={getAlertBadge}
+              getRowStyle={getRowStyle}
+              onEdit={openEditModal}
+              onDelete={deleteItem}
+            />
           ))}
         </tbody>
       </table>
@@ -353,9 +319,4 @@ const th = {
   background: "#222",
   color: "#ccc",
   textAlign: "left",
-};
-
-const td = {
-  border: "1px solid #333",
-  padding: "8px",
 };

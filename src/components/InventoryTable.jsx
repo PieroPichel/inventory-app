@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { databases, ID } from "../appwrite";
 import { Query } from "appwrite";
+import InventoryAddForm from "./InventoryAddForm";
+import InventoryEditForm from "./InventoryEditForm";
 
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
@@ -48,10 +50,7 @@ export default function InventoryTable({ selectedHouse }) {
 
   // ---------------------- LOAD ITEMS ----------------------
   const loadItems = () => {
-    if (!selectedHouse) {
-      console.log("No house selected — skipping load");
-      return;
-    }
+    if (!selectedHouse) return;
 
     databases
       .listDocuments(DB_ID, COLLECTION_ID, [
@@ -128,83 +127,6 @@ export default function InventoryTable({ selectedHouse }) {
     }
   };
 
-  // ---------------------- VALIDATION ----------------------
-  const validateItem = (item) => {
-    const {
-      Item,
-      stock_type,
-      subcategory,
-      quantity,
-      Min_Stock,
-      Unit,
-      life,
-    } = item;
-
-    if (!Item.trim()) return "Item is required.";
-    if (Item.length > 20) return "Item must be at most 20 characters.";
-
-    if (stock_type && stock_type.length > 20)
-      return "Stock type must be at most 20 characters.";
-
-    if (!subcategory.trim()) return "Subcategory is required.";
-    if (subcategory.length > 20)
-      return "Subcategory must be at most 20 characters.";
-
-    const q = parseFloat(quantity);
-    if (isNaN(q)) return "Quantity must be a number.";
-    if (q < 0) return "Quantity cannot be negative.";
-
-    if (Min_Stock !== "" && Min_Stock !== null) {
-      const m = parseFloat(Min_Stock);
-      if (isNaN(m)) return "Min Stock must be a number.";
-      if (m < 0) return "Min Stock cannot be negative.";
-    }
-
-    if (!Unit.trim()) return "Unit is required.";
-    if (Unit.length > 10) return "Unit must be at most 10 characters.";
-
-    if (!life.trim()) return "Life is required.";
-
-    return null;
-  };
-
-  // ---------------------- ADD ITEM ----------------------
-  const addItem = async () => {
-    if (!selectedHouse) {
-      alert("No house selected — cannot add item.");
-      return;
-    }
-
-    const validationError = validateItem(newItem);
-    if (validationError) {
-      setErrorMessage(validationError);
-      return;
-    }
-
-    setErrorMessage("");
-
-    const payload = {
-      ...newItem,
-      quantity: parseFloat(newItem.quantity),
-      Min_Stock: newItem.Min_Stock ? parseFloat(newItem.Min_Stock) : 0,
-      expiry_date: newItem.expiry_date || null,
-      houseId: selectedHouse, // ⭐ CRITICAL
-    };
-
-    try {
-      await databases.createDocument(DB_ID, COLLECTION_ID, ID.unique(), payload);
-
-      setShowAddModal(false);
-      setNewItem({ ...emptyItem });
-
-      setPage(0);
-      loadItems();
-    } catch (err) {
-      console.error("Add failed:", err);
-      alert("Add failed — check Appwrite schema/permissions.");
-    }
-  };
-
   // ---------------------- OPEN EDIT MODAL ----------------------
   const openEditModal = (item) => {
     setEditItem({
@@ -213,39 +135,6 @@ export default function InventoryTable({ selectedHouse }) {
     });
     setShowEditModal(true);
     setErrorMessage("");
-  };
-
-  // ---------------------- SAVE EDIT ----------------------
-  const saveEdit = async () => {
-    const validationError = validateItem(editItem);
-    if (validationError) {
-      setErrorMessage(validationError);
-      return;
-    }
-
-    const payload = {
-      ...editItem,
-      quantity: parseFloat(editItem.quantity),
-      Min_Stock: editItem.Min_Stock ? parseFloat(editItem.Min_Stock) : 0,
-      expiry_date: editItem.expiry_date || null,
-      houseId: selectedHouse, // ⭐ Ensure edits keep the correct house
-    };
-
-    try {
-      await databases.updateDocument(
-        DB_ID,
-        COLLECTION_ID,
-        editItem.$id,
-        payload
-      );
-
-      setShowEditModal(false);
-      setEditItem(null);
-      loadItems();
-    } catch (err) {
-      console.error("Edit failed:", err);
-      alert("Edit failed — check Appwrite schema/permissions.");
-    }
   };
 
   // ---------------------- NO HOUSE SELECTED ----------------------
@@ -286,42 +175,53 @@ export default function InventoryTable({ selectedHouse }) {
         + Add Item
       </button>
 
-      {/* ---------------------- ADD ITEM MODAL ---------------------- */}
+      {/* ADD FORM */}
       {showAddModal && (
-        <Modal
-          title="Add New Item"
+        <InventoryAddForm
           item={newItem}
           setItem={setNewItem}
-          onSave={addItem}
-          onCancel={() => {
+          onClose={() => {
             setShowAddModal(false);
             setErrorMessage("");
           }}
+          onCreated={() => {
+            setShowAddModal(false);
+            setNewItem({ ...emptyItem });
+            setPage(0);
+            loadItems();
+          }}
           errorMessage={errorMessage}
+          setErrorMessage={setErrorMessage}
+          selectedHouse={selectedHouse}
           CATEGORY_OPTIONS={CATEGORY_OPTIONS}
           LIFE_OPTIONS={LIFE_OPTIONS}
         />
       )}
 
-      {/* ---------------------- EDIT ITEM MODAL ---------------------- */}
+      {/* EDIT FORM */}
       {showEditModal && editItem && (
-        <Modal
-          title="Edit Item"
+        <InventoryEditForm
           item={editItem}
           setItem={setEditItem}
-          onSave={saveEdit}
-          onCancel={() => {
+          onClose={() => {
             setShowEditModal(false);
             setEditItem(null);
             setErrorMessage("");
           }}
+          onUpdated={() => {
+            setShowEditModal(false);
+            setEditItem(null);
+            loadItems();
+          }}
           errorMessage={errorMessage}
+          setErrorMessage={setErrorMessage}
+          selectedHouse={selectedHouse}
           CATEGORY_OPTIONS={CATEGORY_OPTIONS}
           LIFE_OPTIONS={LIFE_OPTIONS}
         />
       )}
 
-      {/* ---------------------- MAIN TABLE ---------------------- */}
+      {/* TABLE */}
       <table
         style={{
           width: "100%",
@@ -396,7 +296,7 @@ export default function InventoryTable({ selectedHouse }) {
         </tbody>
       </table>
 
-      {/* ---------------------- PAGINATION ---------------------- */}
+      {/* PAGINATION */}
       <div
         style={{
           marginTop: "20px",
@@ -446,211 +346,6 @@ export default function InventoryTable({ selectedHouse }) {
     </div>
   );
 }
-
-/* ---------------------- MODAL COMPONENT ---------------------- */
-
-function Modal({
-  title,
-  item,
-  setItem,
-  onSave,
-  onCancel,
-  errorMessage,
-  CATEGORY_OPTIONS,
-  LIFE_OPTIONS,
-}) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        background: "rgba(0,0,0,0.7)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          background: "#1e1e1e",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "90%",
-          maxWidth: "400px",
-        }}
-      >
-        <h3>{title}</h3>
-
-        {errorMessage && (
-          <div
-            style={{
-              background: "#4a0000",
-              color: "#ffb3b3",
-              padding: "8px",
-              borderRadius: "4px",
-              marginBottom: "10px",
-              fontSize: "0.9rem",
-            }}
-          >
-            {errorMessage}
-          </div>
-        )}
-
-        <label>Item *</label>
-        <input
-          type="text"
-          maxLength={20}
-          value={item.Item}
-          onChange={(e) => setItem({ ...item, Item: e.target.value })}
-          style={inputStyle}
-        />
-
-        <label>Stock Type</label>
-        <input
-          type="text"
-          maxLength={20}
-          value={item.stock_type}
-          onChange={(e) => setItem({ ...item, stock_type: e.target.value })}
-          style={inputStyle}
-        />
-
-        <label>Category *</label>
-        <select
-          value={item.Category}
-          onChange={(e) => setItem({ ...item, Category: e.target.value })}
-          style={inputStyle}
-        >
-          {CATEGORY_OPTIONS.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-
-        <label>Subcategory *</label>
-        <input
-          type="text"
-          maxLength={20}
-          value={item.subcategory}
-          onChange={(e) => setItem({ ...item, subcategory: e.target.value })}
-          style={inputStyle}
-        />
-
-        <label>Life *</label>
-        <select
-          value={item.life}
-          onChange={(e) => setItem({ ...item, life: e.target.value })}
-          style={inputStyle}
-        >
-          {LIFE_OPTIONS.map((life) => (
-            <option key={life} value={life}>
-              {life}
-            </option>
-          ))}
-        </select>
-
-        <label>Quantity *</label>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          value={item.quantity}
-          onChange={(e) => setItem({ ...item, quantity: e.target.value })}
-          style={inputStyle}
-        />
-
-        <label>Min Stock</label>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          value={item.Min_Stock}
-          onChange={(e) => setItem({ ...item, Min_Stock: e.target.value })}
-          style={inputStyle}
-          placeholder="0"
-        />
-
-        <label>Unit *</label>
-        <input
-          type="text"
-          maxLength={10}
-          value={item.Unit}
-          onChange={(e) => setItem({ ...item, Unit: e.target.value })}
-          style={inputStyle}
-        />
-
-        <label>Storage Location</label>
-        <input
-          type="text"
-          value={item.storage_location}
-          onChange={(e) =>
-            setItem({ ...item, storage_location: e.target.value })
-          }
-          style={inputStyle}
-        />
-
-        <label>Expiry Date</label>
-        <input
-          type="date"
-          value={item.expiry_date || ""}
-          onChange={(e) =>
-            setItem({ ...item, expiry_date: e.target.value })
-          }
-          style={inputStyle}
-        />
-
-        <button onClick={onSave} style={saveButtonStyle}>
-          Save
-        </button>
-
-        <button
-          onClick={onCancel}
-          style={cancelButtonStyle}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------- SHARED STYLES ---------------------- */
-
-const inputStyle = {
-  width: "100%",
-  padding: "8px",
-  background: "#333",
-  color: "#fff",
-  border: "1px solid #555",
-  borderRadius: "4px",
-  marginBottom: "10px",
-};
-
-const saveButtonStyle = {
-  padding: "10px",
-  width: "100%",
-  background: "#4caf50",
-  border: "none",
-  color: "#fff",
-  borderRadius: "6px",
-  cursor: "pointer",
-  marginTop: "10px",
-};
-
-const cancelButtonStyle = {
-  padding: "10px",
-  width: "100%",
-  background: "#444",
-  border: "none",
-  color: "#fff",
-  borderRadius: "6px",
-  cursor: "pointer",
-  marginTop: "10px",
-};
 
 const th = {
   border: "1px solid #444",

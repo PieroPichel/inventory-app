@@ -1,0 +1,177 @@
+import { useEffect, useState } from "react";
+import { databases } from "../appwrite";
+
+const DB_ID = "697dcef40009d64e2fe1";
+const COLLECTION_ID = "inventory_items";
+
+export default function InventoryTable() {
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    databases
+      .listDocuments(DB_ID, COLLECTION_ID)
+      .then((res) => setItems(res.documents))
+      .catch((err) => console.error("Error loading items:", err));
+  }, []);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    return date.toLocaleDateString();
+  };
+
+  // --- ALERT LOGIC ---
+  const today = new Date();
+  const oneWeekFromNow = new Date();
+  oneWeekFromNow.setDate(today.getDate() + 7);
+
+  const getAlertStatus = (item) => {
+    const quantity = item["quantity"];
+    const minStock = item["Min_Stock"];
+    const expiry = item["expiry_date"] ? new Date(item["expiry_date"]) : null;
+
+    if (quantity < minStock) return "low";
+    if (expiry && expiry < today) return "expired";
+    if (expiry && expiry >= today && expiry <= oneWeekFromNow) return "soon";
+    return null;
+  };
+
+  const getAlertBadge = (item) => {
+    const status = getAlertStatus(item);
+
+    if (status === "expired") {
+      return <span style={{ color: "#ff6666" }}>Expired</span>;
+    }
+    if (status === "soon") {
+      return <span style={{ color: "#ffcc66" }}>Expiring soon</span>;
+    }
+    if (status === "low") {
+      return <span style={{ color: "#ffff66" }}>Low stock</span>;
+    }
+
+    return null;
+  };
+
+  const alerts = items
+    .map((item) => {
+      const status = getAlertStatus(item);
+      if (!status) return null;
+
+      return {
+        item: item["Item"],
+        reason:
+          status === "low"
+            ? "Low stock"
+            : status === "expired"
+            ? "Expired"
+            : "Expiring soon",
+      };
+    })
+    .filter(Boolean);
+
+  // Sort items so alerts appear first
+  const sortedItems = [...items].sort((a, b) => {
+    const aAlert = getAlertStatus(a) ? 1 : 0;
+    const bAlert = getAlertStatus(b) ? 1 : 0;
+    return bAlert - aAlert;
+  });
+
+  const getRowStyle = (item) => {
+    const status = getAlertStatus(item);
+
+    return {
+      background: "#121212",
+      color: "#eee",
+      fontWeight: status ? "bold" : "normal",
+    };
+  };
+
+  return (
+    <div
+      style={{
+        padding: "20px",
+        background: "#121212",
+        minHeight: "100vh",
+        color: "#eee",
+      }}
+    >
+      <h2 style={{ marginBottom: "20px" }}>Household Inventory</h2>
+
+      {/* --- STOCK ALERTS SECTION --- */}
+      <div
+        style={{
+          marginBottom: "20px",
+          padding: "15px",
+          border: "1px solid #444",
+          background: "#1e1e1e",
+          borderRadius: "6px",
+        }}
+      >
+        <h3 style={{ marginTop: 0 }}>Stock Alerts</h3>
+
+        {alerts.length === 0 ? (
+          <p>No alerts — everything looks good.</p>
+        ) : (
+          <ul>
+            {alerts.map((alert, index) => (
+              <li key={index}>
+                <strong>{alert.item}</strong> — {alert.reason}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* --- MAIN TABLE --- */}
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          border: "1px solid #444",
+        }}
+      >
+        <thead>
+          <tr>
+            <th style={th}>Item</th>
+            <th style={th}>Category</th>
+            <th style={th}>Quantity</th>
+            <th style={th}>Min Stock</th>
+            <th style={th}>Unit</th>
+            <th style={th}>Location</th>
+            <th style={th}>Expiry</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {sortedItems.map((item) => (
+            <tr key={item.$id} style={getRowStyle(item)}>
+              <td style={td}>
+                {item["Item"]} {getAlertBadge(item)}
+              </td>
+              <td style={td}>{item["Category"]}</td>
+              <td style={td}>{item["quantity"]}</td>
+              <td style={td}>{item["Min_Stock"]}</td>
+              <td style={td}>{item["Unit"]}</td>
+              <td style={td}>{item["storage_location"]}</td>
+              <td style={td}>{formatDate(item["expiry_date"])}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const th = {
+  border: "1px solid #444",
+  padding: "8px",
+  background: "#222",
+  color: "#ccc",
+  textAlign: "left",
+};
+
+const td = {
+  border: "1px solid #333",
+  padding: "8px",
+};

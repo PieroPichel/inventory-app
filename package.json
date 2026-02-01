@@ -12,9 +12,10 @@
   "dependencies": {
     "@appwrite.io/pink-icons": "^1.0.0",
     "@tailwindcss/vite": "^4.0.14",
-    "appwrite": "^21.2.1",
+    "appwrite": "^11.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.13.0",
     "tailwindcss": "^4.0.14"
   },
   "devDependencies": {

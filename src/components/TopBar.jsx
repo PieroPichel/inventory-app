@@ -1,0 +1,198 @@
+import { useEffect, useState } from "react";
+import { account, databases } from "../appwrite";
+import { Query } from "appwrite";
+
+const DB_ID = "697dcef40009d64e2fe1";
+const HOUSES_COLLECTION = "houses";
+const USER_HOUSES_COLLECTION = "user_houses";
+
+export default function TopBar({ onHouseChange }) {
+  const [houses, setHouses] = useState([]);
+  const [currentHouse, setCurrentHouse] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadHouses = async () => {
+      try {
+        console.log("Loading houses…");
+
+        // 1. Get logged-in user
+        const user = await account.get();
+        console.log("Logged-in user:", user);
+        setCurrentUser(user);
+
+        // 2. Get all house links for this user
+        const links = await databases.listDocuments(
+          DB_ID,
+          USER_HOUSES_COLLECTION,
+          [Query.equal("userId", user.$id)]
+        );
+
+        console.log("User house links:", links.documents);
+
+        if (links.total === 0) {
+          console.warn("User has NO house links");
+          setLoading(false);
+          return;
+        }
+
+        const houseIds = links.documents.map((doc) => doc.houseId);
+        console.log("House IDs:", houseIds);
+
+        // 3. Fetch each house document
+        const houseDocs = await Promise.all(
+          houseIds.map((id) =>
+            databases.getDocument(DB_ID, HOUSES_COLLECTION, id)
+          )
+        );
+
+        console.log("House docs:", houseDocs);
+
+        setHouses(houseDocs);
+
+        // 4. Load saved house or default to first
+        const saved = localStorage.getItem("currentHouseId");
+        const defaultHouse =
+          houseDocs.find((h) => h.$id === saved) || houseDocs[0];
+
+        console.log("Selected house:", defaultHouse);
+
+        setCurrentHouse(defaultHouse);
+        onHouseChange(defaultHouse.$id);
+      } catch (err) {
+        console.error("Failed to load houses:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHouses();
+  }, []);
+
+  const changeHouse = (houseId) => {
+    const selected = houses.find((h) => h.$id === houseId);
+    setCurrentHouse(selected);
+    localStorage.setItem("currentHouseId", houseId);
+    onHouseChange(houseId);
+  };
+
+  const logout = async () => {
+    await account.deleteSession("current");
+    window.location.href = "/login";
+  };
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "60px",
+        background: "#1a1a1a",
+        color: "white",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 20px",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Left side: Logo + Title */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 32 32"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M4 14L16 4L28 14"
+            stroke="#ffffff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <rect
+            x="7"
+            y="14"
+            width="18"
+            height="13"
+            rx="2"
+            stroke="#ffffff"
+            strokeWidth="2"
+            fill="none"
+          />
+          <line
+            x1="10"
+            y1="18"
+            x2="22"
+            y2="18"
+            stroke="#ffffff"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <line
+            x1="10"
+            y1="22"
+            x2="22"
+            y2="22"
+            stroke="#ffffff"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+
+        <h2 style={{ margin: 0, fontSize: "20px" }}>Household Inventory</h2>
+      </div>
+
+      {/* Middle: House selector */}
+      {loading ? (
+        <span style={{ color: "#aaa" }}>Loading houses…</span>
+      ) : houses.length > 0 ? (
+        <select
+          value={currentHouse?.$id || ""}
+          onChange={(e) => changeHouse(e.target.value)}
+          style={{
+            background: "#222",
+            color: "white",
+            border: "1px solid #444",
+            padding: "6px 10px",
+            borderRadius: "6px",
+          }}
+        >
+          {houses.map((h) => (
+            <option key={h.$id} value={h.$id}>
+              {h.name}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <span style={{ color: "#aaa" }}>No houses found</span>
+      )}
+
+      {/* Right side: User ID + Logout */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        {currentUser && (
+          <span style={{ fontSize: "12px", color: "#bbb" }}>
+            ID: {currentUser.$id}
+          </span>
+        )}
+
+        <button
+          onClick={logout}
+          style={{
+            background: "#e74c3c",
+            border: "none",
+            padding: "8px 14px",
+            borderRadius: "6px",
+            color: "white",
+            cursor: "pointer",
+            fontSize: "14px",
+          }}
+        >
+          Log out
+        </button>
+      </div>
+    </div>
+  );
+}

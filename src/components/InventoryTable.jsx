@@ -5,6 +5,7 @@ import { Query } from "appwrite";
 import InventoryAddForm from "./InventoryAddForm";
 import InventoryEditForm from "./InventoryEditForm";
 import InventoryRow from "./InventoryRow";
+import InventoryCard from "./InventoryCard";
 
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
@@ -18,6 +19,8 @@ export default function InventoryTable({ selectedHouse }) {
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 100;
   const [totalItems, setTotalItems] = useState(0);
+
+  const [viewMode, setViewMode] = useState("table"); // "table" or "card"
 
   const emptyItem = {
     Item: "",
@@ -72,7 +75,7 @@ export default function InventoryTable({ selectedHouse }) {
   }, [page, selectedHouse]);
 
   const formatDate = (dateString) => {
-    if (!dateString) return "";
+    if (!dateString) return "—";
     const date = new Date(dateString);
     if (isNaN(date)) return dateString;
     return date.toLocaleDateString();
@@ -97,9 +100,15 @@ export default function InventoryTable({ selectedHouse }) {
   const getAlertBadge = (item) => {
     const status = getAlertStatus(item);
 
-    if (status === "expired") return <span style={{ color: "#ff6666" }}>Expired</span>;
-    if (status === "soon") return <span style={{ color: "#ffcc66" }}>Expiring soon</span>;
-    if (status === "low") return <span style={{ color: "#ffff66" }}>Low stock</span>;
+    if (status === "expired")
+      return <span style={{ color: "#ff6666", fontWeight: "bold" }}>Expired</span>;
+
+    if (status === "soon")
+      return <span style={{ color: "#ffcc66", fontWeight: "bold" }}>Soon</span>;
+
+    if (status === "low")
+      return <span style={{ color: "#ffff66", fontWeight: "bold" }}>Low</span>;
+
     return null;
   };
 
@@ -108,15 +117,6 @@ export default function InventoryTable({ selectedHouse }) {
     const bAlert = getAlertStatus(b) ? 1 : 0;
     return bAlert - aAlert;
   });
-
-  const getRowStyle = (item) => {
-    const status = getAlertStatus(item);
-    return {
-      background: "#121212",
-      color: "#eee",
-      fontWeight: status ? "bold" : "normal",
-    };
-  };
 
   // ---------------------- DELETE ITEM ----------------------
   const deleteItem = async (id) => {
@@ -157,11 +157,33 @@ export default function InventoryTable({ selectedHouse }) {
         color: "#eee",
       }}
     >
-      <h3 style={{ marginBottom: "20px", color: "#aaa" }}>
-        Showing {items.length} of {totalItems} items (page {page + 1} of{" "}
-        {Math.max(1, Math.ceil(totalItems / PAGE_SIZE))})
-      </h3>
+      {/* HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+        <h3 style={{ color: "#aaa" }}>
+          Showing {items.length} of {totalItems} items (page {page + 1} of{" "}
+          {Math.max(1, Math.ceil(totalItems / PAGE_SIZE))})
+        </h3>
 
+        {/* VIEW MODE SELECTOR */}
+        <select
+          value={viewMode}
+          onChange={(e) => setViewMode(e.target.value)}
+          style={{
+            padding: "8px",
+            background: "#333",
+            color: "#fff",
+            border: "1px solid #555",
+            borderRadius: "6px",
+            cursor: "pointer",
+            height: "40px",
+          }}
+        >
+          <option value="table">Table View</option>
+          <option value="card">Card View</option>
+        </select>
+      </div>
+
+      {/* ADD BUTTON */}
       <button
         onClick={() => setShowAddModal(true)}
         style={{
@@ -223,44 +245,69 @@ export default function InventoryTable({ selectedHouse }) {
         />
       )}
 
-      {/* TABLE */}
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          border: "1px solid #444",
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={th}>Item</th>
-            <th style={th}>Stock Type</th>
-            <th style={th}>Category</th>
-            <th style={th}>Subcategory</th>
-            <th style={th}>Life</th>
-            <th style={th}>Qty</th>
-            <th style={th}>Min</th>
-            <th style={th}>Unit</th>
-            <th style={th}>Location</th>
-            <th style={th}>Expiry</th>
-            <th style={th}>Actions</th>
-          </tr>
-        </thead>
+      {/* ---------------------- TABLE VIEW ---------------------- */}
+      {viewMode === "table" && (
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              border: "1px solid #444",
+              minWidth: "900px",
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={th}>Item</th>
+                <th style={th}>Stock Type</th>
+                <th style={th}>Category</th>
+                <th style={th}>Subcategory</th>
+                <th style={th}>Life</th>
+                <th style={th}>Qty</th>
+                <th style={th}>Min</th>
+                <th style={th}>Unit</th>
+                <th style={th}>Location</th>
+                <th style={th}>Expiry</th>
+                <th style={th}>Actions</th>
+              </tr>
+            </thead>
 
-        <tbody>
+            <tbody>
+              {sortedItems.map((item) => (
+                <InventoryRow
+                  key={item.$id}
+                  item={item}
+                  formatDate={formatDate}
+                  getAlertBadge={getAlertBadge}
+                  getRowStyle={(i) => ({
+                    background: "#121212",
+                    color: "#eee",
+                    fontWeight: getAlertStatus(i) ? "bold" : "normal",
+                  })}
+                  onEdit={openEditModal}
+                  onDelete={deleteItem}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ---------------------- CARD VIEW ---------------------- */}
+      {viewMode === "card" && (
+        <div>
           {sortedItems.map((item) => (
-            <InventoryRow
+            <InventoryCard
               key={item.$id}
               item={item}
               formatDate={formatDate}
               getAlertBadge={getAlertBadge}
-              getRowStyle={getRowStyle}
               onEdit={openEditModal}
               onDelete={deleteItem}
             />
           ))}
-        </tbody>
-      </table>
+        </div>
+      )}
 
       {/* PAGINATION */}
       <div

@@ -12,51 +12,38 @@ export default function TopBar({ onHouseChange }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const version = process.env.REACT_APP_VERSION || "dev";
+
   useEffect(() => {
     const loadHouses = async () => {
       try {
-        console.log("Loading houses…");
-
-        // 1. Get logged-in user
         const user = await account.get();
-        console.log("Logged-in user:", user);
         setCurrentUser(user);
 
-        // 2. Get all house links for this user
         const links = await databases.listDocuments(
           DB_ID,
           USER_HOUSES_COLLECTION,
           [Query.equal("userId", user.$id)]
         );
 
-        console.log("User house links:", links.documents);
-
         if (links.total === 0) {
-          console.warn("User has NO house links");
           setLoading(false);
           return;
         }
 
         const houseIds = links.documents.map((doc) => doc.houseId);
-        console.log("House IDs:", houseIds);
 
-        // 3. Fetch each house document
         const houseDocs = await Promise.all(
           houseIds.map((id) =>
             databases.getDocument(DB_ID, HOUSES_COLLECTION, id)
           )
         );
 
-        console.log("House docs:", houseDocs);
-
         setHouses(houseDocs);
 
-        // 4. Load saved house or default to first
         const saved = localStorage.getItem("currentHouseId");
         const defaultHouse =
           houseDocs.find((h) => h.$id === saved) || houseDocs[0];
-
-        console.log("Selected house:", defaultHouse);
 
         setCurrentHouse(defaultHouse);
         onHouseChange(defaultHouse.$id);
@@ -170,12 +157,17 @@ export default function TopBar({ onHouseChange }) {
         <span style={{ color: "#aaa" }}>No houses found</span>
       )}
 
-      {/* Right side: User ID + Logout */}
+      {/* Right side: User ID + Version + Logout */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         {currentUser && (
-          <span style={{ fontSize: "12px", color: "#bbb" }}>
-            ID: {currentUser.$id}
-          </span>
+          <div style={{ textAlign: "right", lineHeight: "1.2" }}>
+            <div style={{ fontSize: "12px", color: "#bbb" }}>
+              ID: {currentUser.$id}
+            </div>
+            <div style={{ fontSize: "11px", color: "#666" }}>
+              Build: {version}
+            </div>
+          </div>
         )}
 
         <button

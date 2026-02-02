@@ -15,6 +15,8 @@ export default function InventoryEditForm({
   setErrorMessage,
   selectedHouse,
   LIFE_OPTIONS,
+  categories,
+  subcategories,
 }) {
   const validate = (i) => {
     if (!i.Item.trim()) return "Item is required.";
@@ -71,6 +73,7 @@ export default function InventoryEditForm({
 
       <label>Category *</label>
       <CategorySelect
+        categories={categories}
         value={item.categoryId}
         onChange={(v) =>
           setItem({ ...item, categoryId: v, subcategoryId: "" })
@@ -79,6 +82,7 @@ export default function InventoryEditForm({
 
       <label>Subcategory *</label>
       <SubcategorySelect
+        subcategories={subcategories}
         categoryId={item.categoryId}
         value={item.subcategoryId}
         onChange={(v) => setItem({ ...item, subcategoryId: v })}

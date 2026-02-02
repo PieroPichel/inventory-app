@@ -241,6 +241,8 @@ export default function InventoryTable({ selectedHouse }) {
           setErrorMessage={setErrorMessage}
           selectedHouse={selectedHouse}
           LIFE_OPTIONS={LIFE_OPTIONS}
+          categories={categories}
+          subcategories={subcategories}
         />
       )}
 
@@ -263,6 +265,8 @@ export default function InventoryTable({ selectedHouse }) {
           setErrorMessage={setErrorMessage}
           selectedHouse={selectedHouse}
           LIFE_OPTIONS={LIFE_OPTIONS}
+          categories={categories}
+          subcategories={subcategories}
         />
       )}
 

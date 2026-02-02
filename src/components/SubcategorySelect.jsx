@@ -1,20 +1,31 @@
-import { useSubcategories } from "../hooks/useSubcategories";
+export default function SubcategorySelect({
+  subcategories,
+  categoryId,
+  value,
+  onChange,
+}) {
+  if (!categoryId) {
+    return <p>Select a category first</p>;
+  }
 
-export default function SubcategorySelect({ categoryId, value, onChange }) {
-  const { subcategories, loading } = useSubcategories(categoryId);
+  // Convert object → array of { id, name, categoryId }
+  const list = Object.entries(subcategories).map(([id, data]) => ({
+    id,
+    name: data.name,
+    categoryId: data.categoryId,
+  }));
 
-  if (!categoryId) return <p>Select a category first</p>;
-  if (loading) return <p>Loading subcategories…</p>;
+  // Filter by selected category
+  const filtered = list.filter((s) => s.categoryId === categoryId);
 
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">Select subcategory</option>
-      {subcategories.map((sub) => (
-        <option key={sub.$id} value={sub.$id}>
+      {filtered.map((sub) => (
+        <option key={sub.id} value={sub.id}>
           {sub.name}
         </option>
       ))}
     </select>
   );
 }
-

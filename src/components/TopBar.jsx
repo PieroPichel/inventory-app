@@ -8,13 +8,16 @@ const DB_ID = "697dcef40009d64e2fe1";
 const HOUSES_COLLECTION = "houses";
 const USER_HOUSES_COLLECTION = "user_houses";
 
-export default function TopBar({ onHouseChange, onExport }) {
+export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
   const [houses, setHouses] = useState([]);
   const [currentHouse, setCurrentHouse] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showNotes, setShowNotes] = useState(false);
 
+  // ------------------------------------------------------------
+  // LOAD USER + HOUSES
+  // ------------------------------------------------------------
   useEffect(() => {
     const loadHouses = async () => {
       try {
@@ -58,6 +61,9 @@ export default function TopBar({ onHouseChange, onExport }) {
     loadHouses();
   }, []);
 
+  // ------------------------------------------------------------
+  // CHANGE HOUSE
+  // ------------------------------------------------------------
   const changeHouse = (houseId) => {
     const selected = houses.find((h) => h.$id === houseId);
     setCurrentHouse(selected);
@@ -65,11 +71,17 @@ export default function TopBar({ onHouseChange, onExport }) {
     onHouseChange(houseId);
   };
 
+  // ------------------------------------------------------------
+  // LOGOUT
+  // ------------------------------------------------------------
   const logout = async () => {
     await account.deleteSession("current");
     window.location.href = "/login";
   };
 
+  // ------------------------------------------------------------
+  // RENDER
+  // ------------------------------------------------------------
   return (
     <>
       {/* TOP BAR */}
@@ -160,15 +172,15 @@ export default function TopBar({ onHouseChange, onExport }) {
           <span style={{ color: "#aaa" }}>No houses found</span>
         )}
 
-        {/* Right: User + Version + Logout */}
+        {/* Right: User + Version + Export + Logout */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* USER INFO + VERSION */}
           {currentUser && (
             <div style={{ textAlign: "right", lineHeight: "1.2" }}>
               <div style={{ fontSize: "12px", color: "#bbb" }}>
                 {currentUser.name || currentUser.email}
               </div>
 
-              {/* Version acts as button */}
               <div
                 onClick={() => setShowNotes(!showNotes)}
                 style={{
@@ -183,6 +195,39 @@ export default function TopBar({ onHouseChange, onExport }) {
             </div>
           )}
 
+          {/* NORMAL EXPORT (visible to all users) */}
+          <div
+            onClick={onExport}
+            style={{
+              fontSize: "12px",
+              background: "#333",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              cursor: "pointer",
+              border: "1px solid #555",
+            }}
+          >
+            Export CSV
+          </div>
+
+          {/* ADMIN EXPORT (only for your account) */}
+          {currentUser?.$id === "697e5fe8ee0456829a68" && (
+            <div
+              onClick={onAdminExport}
+              style={{
+                fontSize: "12px",
+                background: "#444",
+                padding: "6px 10px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                border: "1px solid #666",
+              }}
+            >
+              Admin Export
+            </div>
+          )}
+
+          {/* LOGOUT */}
           <button
             onClick={logout}
             style={{
@@ -199,23 +244,6 @@ export default function TopBar({ onHouseChange, onExport }) {
           </button>
         </div>
       </div>
-      
-      {currentUser?.$id === "697e5fe8ee0456829a68" && (
-  <div
-    onClick={onExport}
-    style={{
-      fontSize: "12px",
-      background: "#333",
-      padding: "6px 10px",
-      borderRadius: "6px",
-      cursor: "pointer",
-      border: "1px solid #555"
-    }}
-  >
-    Export CSV
-  </div>
-)}
-
 
       {/* RELEASE NOTES DROPDOWN */}
       {showNotes && (

@@ -12,6 +12,7 @@ export default function App() {
 
   // This ref allows TopBar to trigger export inside InventoryTable
   const exportRef = useRef(null);
+  const adminExportRef = useRef(null);
 
   return (
     <Routes>
@@ -22,21 +23,19 @@ export default function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <>
-              <TopBar
-                onHouseChange={setSelectedHouse}
-                onExport={() => {
-                  if (exportRef.current) {
-                    exportRef.current();
-                  }
-                }}
-              />
+          
+           <TopBar
+			onHouseChange={setSelectedHouse}
+			onExport={() => exportRef.current && exportRef.current()}
+			onAdminExport={() => adminExportRef.current && adminExportRef.current()}
+		   />
 
-              <InventoryTable
-                selectedHouse={selectedHouse}
-                onExportRequest={exportRef}
-              />
-            </>
+		   <InventoryTable
+		    selectedHouse={selectedHouse}
+		    onExportRequest={exportRef}
+		    onAdminExportRequest={adminExportRef}
+		   />
+
           </ProtectedRoute>
         }
       />

@@ -9,11 +9,7 @@ import InventoryCard from "./InventoryCard";
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
 
-export default function InventoryTable({
-  selectedHouse,
-  onExportRequest,
-  onAdminExportRequest
-}) {
+export default function InventoryTable({ selectedHouse, onExportRequest }) {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState({});
   const [subcategories, setSubcategories] = useState({});
@@ -28,9 +24,7 @@ export default function InventoryTable({
 
   const [viewMode, setViewMode] = useState("table");
 
-  // ------------------------------------------------------------
-  // NORMAL EXPORT (selected house only)
-  // ------------------------------------------------------------
+  // ---------------------- EXPORT CSV ----------------------
   const handleExport = () => {
     if (!items.length) {
       alert("No items to export.");
@@ -92,112 +86,14 @@ export default function InventoryTable({
     URL.revokeObjectURL(url);
   };
 
-  // Wire normal export to ref
+  // Wire export function to App.jsx
   useEffect(() => {
     if (onExportRequest) {
       onExportRequest.current = handleExport;
     }
   }, [items, categories, subcategories]);
 
-  // ------------------------------------------------------------
-  // ADMIN EXPORT (full DB dump)
-  // ------------------------------------------------------------
-  const handleAdminExport = async () => {
-    try {
-      const housesRes = await databases.listDocuments(DB_ID, "houses");
-      const categoriesRes = await databases.listDocuments(DB_ID, "inventory_categories");
-      const subcategoriesRes = await databases.listDocuments(DB_ID, "inventory_subcategory");
-      const itemsRes = await databases.listDocuments(DB_ID, COLLECTION_ID);
-
-      const toCSV = (headers, rows) => {
-        const headerLine = headers.join(",");
-        const rowLines = rows.map((r) =>
-          r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")
-        );
-        return [headerLine, ...rowLines].join("\n");
-      };
-
-      const housesCSV = toCSV(
-        ["House ID", "Name"],
-        housesRes.documents.map((h) => [h.$id, h.name])
-      );
-
-      const categoriesCSV = toCSV(
-        ["Category ID", "Name"],
-        categoriesRes.documents.map((c) => [c.$id, c.name])
-      );
-
-      const subcategoriesCSV = toCSV(
-        ["Subcategory ID", "Name", "Category ID"],
-        subcategoriesRes.documents.map((s) => [s.$id, s.name, s.categoryId])
-      );
-
-      const itemsCSV = toCSV(
-        [
-          "Item",
-          "Stock Type",
-          "Category ID",
-          "Subcategory ID",
-          "Life",
-          "Quantity",
-          "Min Stock",
-          "Unit",
-          "Location",
-          "Expiry Date",
-          "Item ID",
-          "House ID"
-        ],
-        itemsRes.documents.map((i) => [
-          i.Item,
-          i.stock_type,
-          i.categoryId,
-          i.subcategoryId,
-          i.life,
-          i.quantity,
-          i.Min_Stock,
-          i.Unit,
-          i.storage_location,
-          i.expiry_date || "",
-          i.$id,
-          i.houseId
-        ])
-      );
-
-      const finalCSV =
-        "=== HOUSES ===\n" +
-        housesCSV +
-        "\n\n=== CATEGORIES ===\n" +
-        categoriesCSV +
-        "\n\n=== SUBCATEGORIES ===\n" +
-        subcategoriesCSV +
-        "\n\n=== ITEMS ===\n" +
-        itemsCSV;
-
-      const blob = new Blob([finalCSV], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "admin_export_full_dump.csv";
-      link.click();
-
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Admin export failed:", err);
-      alert("Admin export failed — check console.");
-    }
-  };
-
-  // Wire admin export to ref
-  useEffect(() => {
-    if (onAdminExportRequest) {
-      onAdminExportRequest.current = handleAdminExport;
-    }
-  }, [items, categories, subcategories]);
-
-  // ------------------------------------------------------------
-  // EMPTY ITEM TEMPLATE
-  // ------------------------------------------------------------
+  // ---------------------- EMPTY ITEM TEMPLATE ----------------------
   const emptyItem = {
     Item: "",
     stock_type: "",
@@ -221,9 +117,7 @@ export default function InventoryTable({
     "Non-Perishable",
   ];
 
-  // ------------------------------------------------------------
-  // LOAD CATEGORIES + SUBCATEGORIES
-  // ------------------------------------------------------------
+  // ---------------------- LOAD CATEGORIES + SUBCATEGORIES ----------------------
   const loadCategoryData = async () => {
     try {
       const catRes = await databases.listDocuments(DB_ID, "inventory_categories");
@@ -249,9 +143,8 @@ export default function InventoryTable({
   useEffect(() => {
     loadCategoryData();
   }, []);
-  // ------------------------------------------------------------
-  // LOAD ITEMS
-  // ------------------------------------------------------------
+
+  // ---------------------- LOAD ITEMS ----------------------
   const loadItems = () => {
     if (!selectedHouse) return;
 
@@ -272,9 +165,7 @@ export default function InventoryTable({
     loadItems();
   }, [page, selectedHouse]);
 
-  // ------------------------------------------------------------
-  // DATE FORMAT
-  // ------------------------------------------------------------
+  // ---------------------- DATE FORMAT ----------------------
   const formatDate = (dateString) => {
     if (!dateString) return "—";
     const date = new Date(dateString);
@@ -282,9 +173,7 @@ export default function InventoryTable({
     return date.toLocaleDateString();
   };
 
-  // ------------------------------------------------------------
-  // ALERT LOGIC
-  // ------------------------------------------------------------
+  // ---------------------- ALERT LOGIC ----------------------
   const today = new Date();
   const oneWeekFromNow = new Date(today);
   oneWeekFromNow.setDate(today.getDate() + 7);
@@ -315,18 +204,13 @@ export default function InventoryTable({
     return null;
   };
 
-  // ------------------------------------------------------------
-  // SORT ITEMS (alerts first)
-  // ------------------------------------------------------------
   const sortedItems = [...items].sort((a, b) => {
     const aAlert = getAlertStatus(a) ? 1 : 0;
     const bAlert = getAlertStatus(b) ? 1 : 0;
     return bAlert - aAlert;
   });
 
-  // ------------------------------------------------------------
-  // DELETE ITEM
-  // ------------------------------------------------------------
+  // ---------------------- DELETE ITEM ----------------------
   const deleteItem = async (id) => {
     try {
       await databases.deleteDocument(DB_ID, COLLECTION_ID, id);
@@ -337,18 +221,14 @@ export default function InventoryTable({
     }
   };
 
-  // ------------------------------------------------------------
-  // OPEN EDIT MODAL
-  // ------------------------------------------------------------
+  // ---------------------- OPEN EDIT MODAL ----------------------
   const openEditModal = (item) => {
     setEditItem({ ...item, expiry_date: item.expiry_date || "" });
     setShowEditModal(true);
     setErrorMessage("");
   };
 
-  // ------------------------------------------------------------
-  // NO HOUSE SELECTED
-  // ------------------------------------------------------------
+  // ---------------------- NO HOUSE SELECTED ----------------------
   if (!selectedHouse) {
     return (
       <div style={{ padding: "20px", color: "#eee" }}>
@@ -356,9 +236,8 @@ export default function InventoryTable({
       </div>
     );
   }
-  // ------------------------------------------------------------
-  // MAIN RENDER
-  // ------------------------------------------------------------
+
+  // ---------------------- MAIN RENDER ----------------------
   return (
     <div
       style={{
@@ -369,13 +248,7 @@ export default function InventoryTable({
       }}
     >
       {/* HEADER */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "20px",
-        }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
         <h3 style={{ color: "#aaa" }}>
           Showing {items.length} of {totalItems} items (page {page + 1} of{" "}
           {Math.max(1, Math.ceil(totalItems / PAGE_SIZE))})
@@ -464,9 +337,7 @@ export default function InventoryTable({
         />
       )}
 
-      {/* ------------------------------------------------------------
-          TABLE VIEW
-      ------------------------------------------------------------ */}
+      {/* TABLE VIEW */}
       {viewMode === "table" && (
         <div style={{ overflowX: "auto" }}>
           <table
@@ -515,9 +386,8 @@ export default function InventoryTable({
           </table>
         </div>
       )}
-      {/* ------------------------------------------------------------
-          CARD VIEW
-      ------------------------------------------------------------ */}
+
+      {/* CARD VIEW */}
       {viewMode === "card" && (
         <div>
           {sortedItems.map((item) => (
@@ -535,9 +405,7 @@ export default function InventoryTable({
         </div>
       )}
 
-      {/* ------------------------------------------------------------
-          PAGINATION
-      ------------------------------------------------------------ */}
+      {/* PAGINATION */}
       <div
         style={{
           marginTop: "20px",

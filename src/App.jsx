@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login.jsx";
@@ -10,6 +10,9 @@ import TopBar from "./components/TopBar.jsx";
 export default function App() {
   const [selectedHouse, setSelectedHouse] = useState(null);
 
+  // This ref allows TopBar to trigger export inside InventoryTable
+  const exportRef = useRef(null);
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -20,8 +23,19 @@ export default function App() {
         element={
           <ProtectedRoute>
             <>
-              <TopBar onHouseChange={setSelectedHouse} />
-              <InventoryTable selectedHouse={selectedHouse} />
+              <TopBar
+                onHouseChange={setSelectedHouse}
+                onExport={() => {
+                  if (exportRef.current) {
+                    exportRef.current();
+                  }
+                }}
+              />
+
+              <InventoryTable
+                selectedHouse={selectedHouse}
+                onExportRequest={exportRef}
+              />
             </>
           </ProtectedRoute>
         }

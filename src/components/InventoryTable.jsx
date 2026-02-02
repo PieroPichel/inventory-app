@@ -10,7 +10,7 @@ import InventoryCard from "./InventoryCard";
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
 
-export default function InventoryTable({ selectedHouse }) {
+export default function InventoryTable({ selectedHouse, onExportRequest }) {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState({});
   const [subcategories, setSubcategories] = useState({});
@@ -24,6 +24,62 @@ export default function InventoryTable({ selectedHouse }) {
   const [totalItems, setTotalItems] = useState(0);
 
   const [viewMode, setViewMode] = useState("table");
+
+const handleExport = () => {
+  const headers = [
+    "Item",
+    "Stock Type",
+    "Category",
+    "Subcategory",
+    "Life",
+    "Quantity",
+    "Min Stock",
+    "Unit",
+    "Location",
+    "Expiry Date",
+    "Item ID",
+    "Category ID",
+    "Subcategory ID",
+    "House ID"
+  ];
+
+  const rows = items.map((item) => {
+    const categoryName = categories[item.categoryId] || "";
+    const subcatObj = subcategories[item.subcategoryId];
+    const subcatName = subcatObj ? subcatObj.name : "";
+
+    return [
+      item.Item,
+      item.stock_type,
+      categoryName,
+      subcatName,
+      item.life,
+      item.quantity,
+      item.Min_Stock,
+      item.Unit,
+      item.storage_location,
+      item.expiry_date || "",
+      item.$id,
+      item.categoryId,
+      item.subcategoryId,
+      item.houseId
+    ]
+      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+      .join(",");
+  });
+
+  const csvContent = [headers.join(","), ...rows].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "inventory_export.csv";
+  link.click();
+
+  URL.revokeObjectURL(url);
+};
 
   const emptyItem = {
     Item: "",

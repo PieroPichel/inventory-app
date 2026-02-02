@@ -8,7 +8,7 @@ const DB_ID = "697dcef40009d64e2fe1";
 const HOUSES_COLLECTION = "houses";
 const USER_HOUSES_COLLECTION = "user_houses";
 
-export default function TopBar({ onHouseChange }) {
+export default function TopBar({ onHouseChange, onExport }) {
   const [houses, setHouses] = useState([]);
   const [currentHouse, setCurrentHouse] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -199,6 +199,23 @@ export default function TopBar({ onHouseChange }) {
           </button>
         </div>
       </div>
+      
+      {currentUser?.$id === "697e5fe8ee0456829a68" && (
+  <div
+    onClick={onExport}
+    style={{
+      fontSize: "12px",
+      background: "#333",
+      padding: "6px 10px",
+      borderRadius: "6px",
+      cursor: "pointer",
+      border: "1px solid #555"
+    }}
+  >
+    Export CSV
+  </div>
+)}
+
 
       {/* RELEASE NOTES DROPDOWN */}
       {showNotes && (

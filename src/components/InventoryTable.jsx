@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-import { databases } from "../appwrite";
-import { Query } from "appwrite";
+import { useState, useEffect } from "react";
+import { databases, Query } from "../appwrite";
 
 import InventoryAddForm from "./InventoryAddForm";
 import InventoryEditForm from "./InventoryEditForm";
@@ -25,62 +24,76 @@ export default function InventoryTable({ selectedHouse, onExportRequest }) {
 
   const [viewMode, setViewMode] = useState("table");
 
-const handleExport = () => {
-  const headers = [
-    "Item",
-    "Stock Type",
-    "Category",
-    "Subcategory",
-    "Life",
-    "Quantity",
-    "Min Stock",
-    "Unit",
-    "Location",
-    "Expiry Date",
-    "Item ID",
-    "Category ID",
-    "Subcategory ID",
-    "House ID"
-  ];
+  // ---------------------- EXPORT CSV ----------------------
+  const handleExport = () => {
+    if (!items.length) {
+      alert("No items to export.");
+      return;
+    }
 
-  const rows = items.map((item) => {
-    const categoryName = categories[item.categoryId] || "";
-    const subcatObj = subcategories[item.subcategoryId];
-    const subcatName = subcatObj ? subcatObj.name : "";
+    const headers = [
+      "Item",
+      "Stock Type",
+      "Category",
+      "Subcategory",
+      "Life",
+      "Quantity",
+      "Min Stock",
+      "Unit",
+      "Location",
+      "Expiry Date",
+      "Item ID",
+      "Category ID",
+      "Subcategory ID",
+      "House ID"
+    ];
 
-    return [
-      item.Item,
-      item.stock_type,
-      categoryName,
-      subcatName,
-      item.life,
-      item.quantity,
-      item.Min_Stock,
-      item.Unit,
-      item.storage_location,
-      item.expiry_date || "",
-      item.$id,
-      item.categoryId,
-      item.subcategoryId,
-      item.houseId
-    ]
-      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-      .join(",");
-  });
+    const rows = items.map((item) => {
+      const categoryName = categories[item.categoryId] || "";
+      const subcatObj = subcategories[item.subcategoryId];
+      const subcatName = subcatObj ? subcatObj.name : "";
 
-  const csvContent = [headers.join(","), ...rows].join("\n");
+      return [
+        item.Item,
+        item.stock_type,
+        categoryName,
+        subcatName,
+        item.life,
+        item.quantity,
+        item.Min_Stock,
+        item.Unit,
+        item.storage_location,
+        item.expiry_date || "",
+        item.$id,
+        item.categoryId,
+        item.subcategoryId,
+        item.houseId
+      ]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(",");
+    });
 
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
+    const csvContent = [headers.join(","), ...rows].join("\n");
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "inventory_export.csv";
-  link.click();
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
 
-  URL.revokeObjectURL(url);
-};
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "inventory_export.csv";
+    link.click();
 
+    URL.revokeObjectURL(url);
+  };
+
+  // Wire export function to App.jsx
+  useEffect(() => {
+    if (onExportRequest) {
+      onExportRequest.current = handleExport;
+    }
+  }, [items, categories, subcategories]);
+
+  // ---------------------- EMPTY ITEM TEMPLATE ----------------------
   const emptyItem = {
     Item: "",
     stock_type: "",
@@ -107,28 +120,20 @@ const handleExport = () => {
   // ---------------------- LOAD CATEGORIES + SUBCATEGORIES ----------------------
   const loadCategoryData = async () => {
     try {
-      const catRes = await databases.listDocuments(
-        DB_ID,
-        "inventory_categories"
-      );
-      const subRes = await databases.listDocuments(
-        DB_ID,
-        "inventory_subcategory"
-      );
+      const catRes = await databases.listDocuments(DB_ID, "inventory_categories");
+      const subRes = await databases.listDocuments(DB_ID, "inventory_subcategory");
 
       setCategories(
         Object.fromEntries(catRes.documents.map((c) => [c.$id, c.name]))
       );
 
       setSubcategories(
-	    Object.fromEntries( 
-	     subRes.documents.map((s) => [
-	      s.$id,
-	    {
-	     name: s.name,
-	     categoryId: s.categoryId,
-	    },
-	   ]) )
+        Object.fromEntries(
+          subRes.documents.map((s) => [
+            s.$id,
+            { name: s.name, categoryId: s.categoryId },
+          ])
+        )
       );
     } catch (err) {
       console.error("Error loading categories:", err);
@@ -160,6 +165,7 @@ const handleExport = () => {
     loadItems();
   }, [page, selectedHouse]);
 
+  // ---------------------- DATE FORMAT ----------------------
   const formatDate = (dateString) => {
     if (!dateString) return "—";
     const date = new Date(dateString);
@@ -169,13 +175,13 @@ const handleExport = () => {
 
   // ---------------------- ALERT LOGIC ----------------------
   const today = new Date();
-  const oneWeekFromNow = new Date();
+  const oneWeekFromNow = new Date(today);
   oneWeekFromNow.setDate(today.getDate() + 7);
 
   const getAlertStatus = (item) => {
-    const quantity = Number(item["quantity"]);
-    const minStock = Number(item["Min_Stock"] ?? 0);
-    const expiry = item["expiry_date"] ? new Date(item["expiry_date"]) : null;
+    const quantity = Number(item.quantity);
+    const minStock = Number(item.Min_Stock ?? 0);
+    const expiry = item.expiry_date ? new Date(item.expiry_date) : null;
 
     if (!isNaN(quantity) && !isNaN(minStock) && quantity < minStock) return "low";
     if (expiry && expiry < today) return "expired";
@@ -217,10 +223,7 @@ const handleExport = () => {
 
   // ---------------------- OPEN EDIT MODAL ----------------------
   const openEditModal = (item) => {
-    setEditItem({
-      ...item,
-      expiry_date: item.expiry_date || "",
-    });
+    setEditItem({ ...item, expiry_date: item.expiry_date || "" });
     setShowEditModal(true);
     setErrorMessage("");
   };
@@ -234,6 +237,7 @@ const handleExport = () => {
     );
   }
 
+  // ---------------------- MAIN RENDER ----------------------
   return (
     <div
       style={{
@@ -333,7 +337,7 @@ const handleExport = () => {
         />
       )}
 
-      {/* ---------------------- TABLE VIEW ---------------------- */}
+      {/* TABLE VIEW */}
       {viewMode === "table" && (
         <div style={{ overflowX: "auto" }}>
           <table
@@ -383,7 +387,7 @@ const handleExport = () => {
         </div>
       )}
 
-      {/* ---------------------- CARD VIEW ---------------------- */}
+      {/* CARD VIEW */}
       {viewMode === "card" && (
         <div>
           {sortedItems.map((item) => (

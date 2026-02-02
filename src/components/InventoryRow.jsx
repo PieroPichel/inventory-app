@@ -15,7 +15,6 @@ export default function InventoryRow({
       <td style={td}>
         {item["Item"]} {getAlertBadge(item)}
       </td>
-      <td style={td}>{item["stock_type"]}</td>
 
       {/* Dynamic category + subcategory */}
       <td style={td}>{categoryName || "—"}</td>

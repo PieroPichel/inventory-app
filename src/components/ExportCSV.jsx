@@ -12,7 +12,6 @@ export default function ExportCSV({ items, categories, subcategories, currentUse
 
     const headers = [
       "Item",
-      "Stock Type",
       "Category",
       "Subcategory",
       "Life",
@@ -34,7 +33,6 @@ export default function ExportCSV({ items, categories, subcategories, currentUse
 
       return [
         item.Item,
-        item.stock_type,
         categoryName,
         subcatName,
         item.life,

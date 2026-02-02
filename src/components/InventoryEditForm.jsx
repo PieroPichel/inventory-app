@@ -21,8 +21,6 @@ export default function InventoryEditForm({
   const validate = (i) => {
     if (!i.Item.trim()) return "Item is required.";
     if (i.Item.length > 20) return "Item must be at most 20 characters.";
-    if (i.stock_type && i.stock_type.length > 20)
-      return "Stock type must be at most 20 characters.";
 
     if (!i.categoryId) return "Category is required.";
     if (!i.subcategoryId) return "Subcategory is required.";
@@ -67,9 +65,6 @@ export default function InventoryEditForm({
       {errorMessage && <div style={errBox}>{errorMessage}</div>}
 
       {field("Item *", "text", item.Item, (v) => setItem({ ...item, Item: v }))}
-      {field("Stock Type", "text", item.stock_type, (v) =>
-        setItem({ ...item, stock_type: v })
-      )}
 
 <div style={{ marginBottom: "10px" }}>
   <label>Category *</label>

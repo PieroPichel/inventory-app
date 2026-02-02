@@ -42,7 +42,6 @@ export default function InventoryTable({
 
     const headers = [
       "Item",
-      "Stock Type",
       "Category",
       "Subcategory",
       "Life",
@@ -64,7 +63,6 @@ export default function InventoryTable({
 
       return [
         item.Item,
-        item.stock_type,
         categoryName,
         subcatName,
         item.life,
@@ -138,7 +136,6 @@ export default function InventoryTable({
       const itemsCSV = toCSV(
         [
           "Item",
-          "Stock Type",
           "Category ID",
           "Subcategory ID",
           "Life",
@@ -152,7 +149,6 @@ export default function InventoryTable({
         ],
         itemsRes.documents.map((i) => [
           i.Item,
-          i.stock_type,
           i.categoryId,
           i.subcategoryId,
           i.life,
@@ -203,7 +199,6 @@ export default function InventoryTable({
   // ------------------------------------------------------------
   const emptyItem = {
     Item: "",
-    stock_type: "",
     categoryId: "",
     subcategoryId: "",
     quantity: "",
@@ -508,7 +503,6 @@ const decreaseQty = async (item) => {
             <thead>
               <tr>
                 <th style={th}>Item</th>
-                <th style={th}>Stock Type</th>
                 <th style={th}>Category</th>
                 <th style={th}>Subcategory</th>
                 <th style={th}>Life</th>

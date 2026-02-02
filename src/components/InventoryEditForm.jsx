@@ -64,87 +64,164 @@ export default function InventoryEditForm({
     <SharedModal title="Edit Item" onCancel={onClose}>
       {errorMessage && <div style={errBox}>{errorMessage}</div>}
 
-      {field("Item *", "text", item.Item, (v) => setItem({ ...item, Item: v }))}
+      {/* ITEM NAME */}
+      <div style={fullRow}>
+        <label>Item *</label>
+        <input
+          type="text"
+          value={item.Item}
+          onChange={(e) => setItem({ ...item, Item: e.target.value })}
+          style={input}
+        />
+      </div>
 
-<div style={{ marginBottom: "10px" }}>
-  <label>Category *</label>
-  <CategorySelect
-    categories={categories}
-    value={item.categoryId}
-    onChange={(v) =>
-      setItem({ ...item, categoryId: v, subcategoryId: "" })
-    }
-  />
-</div>
+      {/* ROW 1 — Quantity, Min Stock, Unit */}
+      <div style={row3}>
+        <div style={col3}>
+          <label>Quantity *</label>
+          <input
+            type="number"
+            value={item.quantity}
+            onChange={(e) => setItem({ ...item, quantity: e.target.value })}
+            style={input}
+          />
+        </div>
 
-<div style={{ marginBottom: "10px" }}>
-  <label>Subcategory *</label>
-  <SubcategorySelect
-    subcategories={subcategories}
-    categoryId={item.categoryId}
-    value={item.subcategoryId}
-    onChange={(v) => setItem({ ...item, subcategoryId: v })}
-  />
-</div>
+        <div style={col3}>
+          <label>Min Stock</label>
+          <input
+            type="number"
+            value={item.Min_Stock}
+            onChange={(e) => setItem({ ...item, Min_Stock: e.target.value })}
+            style={input}
+          />
+        </div>
 
+        <div style={col3}>
+          <label>Unit *</label>
+          <input
+            type="text"
+            value={item.Unit}
+            onChange={(e) => setItem({ ...item, Unit: e.target.value })}
+            style={input}
+          />
+        </div>
+      </div>
 
-      <label>Life *</label>
-      <select
-        value={item.life}
-        onChange={(e) => setItem({ ...item, life: e.target.value })}
-        style={input}
-      >
-        {LIFE_OPTIONS.map((l) => (
-          <option key={l}>{l}</option>
-        ))}
-      </select>
+      {/* ROW 2 — Category + Subcategory */}
+      <div style={row}>
+        <div style={col}>
+          <label>Category *</label>
+          <CategorySelect
+            categories={categories}
+            value={item.categoryId}
+            onChange={(v) =>
+              setItem({ ...item, categoryId: v, subcategoryId: "" })
+            }
+          />
+        </div>
 
-      {field("Quantity *", "number", item.quantity, (v) =>
-        setItem({ ...item, quantity: v })
-      )}
+        <div style={col}>
+          <label>Subcategory *</label>
+          <SubcategorySelect
+            subcategories={subcategories}
+            categoryId={item.categoryId}
+            value={item.subcategoryId}
+            onChange={(v) => setItem({ ...item, subcategoryId: v })}
+          />
+        </div>
+      </div>
 
-      {field("Min Stock", "number", item.Min_Stock, (v) =>
-        setItem({ ...item, Min_Stock: v })
-      )}
+      {/* ROW 3 — Life + Expiry Date */}
+      <div style={row}>
+        <div style={col}>
+          <label>Life *</label>
+          <select
+            value={item.life}
+            onChange={(e) => setItem({ ...item, life: e.target.value })}
+            style={input}
+          >
+            {LIFE_OPTIONS.map((l) => (
+              <option key={l}>{l}</option>
+            ))}
+          </select>
+        </div>
 
-      {field("Unit *", "text", item.Unit, (v) =>
-        setItem({ ...item, Unit: v })
-      )}
+        <div style={col}>
+          <label>Expiry Date</label>
+          <input
+            type="date"
+            value={item.expiry_date || ""}
+            onChange={(e) =>
+              setItem({ ...item, expiry_date: e.target.value })
+            }
+            style={input}
+          />
+        </div>
+      </div>
 
-      {field("Storage Location", "text", item.storage_location, (v) =>
-        setItem({ ...item, storage_location: v })
-      )}
+      {/* STORAGE LOCATION */}
+      <div style={fullRow}>
+        <label>Storage Location</label>
+        <input
+          type="text"
+          value={item.storage_location}
+          onChange={(e) =>
+            setItem({ ...item, storage_location: e.target.value })
+          }
+          style={input}
+        />
+      </div>
 
-      <label>Expiry Date</label>
-      <input
-        type="date"
-        value={item.expiry_date || ""}
-        onChange={(e) =>
-          setItem({ ...item, expiry_date: e.target.value })
-        }
-        style={input}
-      />
+      {/* NOTES */}
+      <div style={fullRow}>
+        <label>Notes</label>
+        <textarea
+          value={item.item_notes || ""}
+          onChange={(e) =>
+            setItem({ ...item, item_notes: e.target.value })
+          }
+          style={textarea}
+        />
+      </div>
 
-      <button onClick={save} style={saveBtn}>Save</button>
+      {/* SAVE BUTTON */}
+      <button onClick={save} style={saveBtn}>
+        Save
+      </button>
     </SharedModal>
   );
 }
 
-/* ---------------------- HELPERS ---------------------- */
-
-const field = (label, type, value, onChange) => (
-  <>
-    <label>{label}</label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      style={input}
-    />
-  </>
-);
-
 /* ---------------------- STYLES ---------------------- */
+
+const row = {
+  display: "flex",
+  gap: "10px",
+  marginBottom: "12px",
+  flexWrap: "wrap",
+};
+
+const col = {
+  flex: "1 1 48%",
+  minWidth: "140px",
+};
+
+const row3 = {
+  display: "flex",
+  gap: "10px",
+  marginBottom: "12px",
+  flexWrap: "wrap",
+};
+
+const col3 = {
+  flex: "1 1 30%",
+  minWidth: "100px",
+};
+
+const fullRow = {
+  marginBottom: "12px",
+};
 
 const input = {
   width: "100%",
@@ -153,7 +230,16 @@ const input = {
   color: "#fff",
   border: "1px solid #555",
   borderRadius: "4px",
-  marginBottom: "10px",
+};
+
+const textarea = {
+  width: "100%",
+  padding: "8px",
+  background: "#333",
+  color: "#fff",
+  border: "1px solid #555",
+  borderRadius: "4px",
+  minHeight: "80px",
 };
 
 const errBox = {

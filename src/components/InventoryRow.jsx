@@ -1,7 +1,9 @@
-// components/Inventory/InventoryRow.jsx
+// components/InventoryRow.jsx
 
 export default function InventoryRow({
   item,
+  categoryName,
+  subcategoryName,
   formatDate,
   getAlertBadge,
   getRowStyle,
@@ -14,8 +16,11 @@ export default function InventoryRow({
         {item["Item"]} {getAlertBadge(item)}
       </td>
       <td style={td}>{item["stock_type"]}</td>
-      <td style={td}>{item["Category"]}</td>
-      <td style={td}>{item["subcategory"]}</td>
+
+      {/* Dynamic category + subcategory */}
+      <td style={td}>{categoryName || "—"}</td>
+      <td style={td}>{subcategoryName || "—"}</td>
+
       <td style={td}>{item["life"]}</td>
       <td style={td}>{item["quantity"]}</td>
       <td style={td}>{item["Min_Stock"]}</td>
@@ -24,17 +29,11 @@ export default function InventoryRow({
       <td style={td}>{formatDate(item["expiry_date"])}</td>
 
       <td style={td}>
-        <button
-          onClick={() => onEdit(item)}
-          style={editBtn}
-        >
+        <button onClick={() => onEdit(item)} style={editBtn}>
           Edit
         </button>
 
-        <button
-          onClick={() => onDelete(item.$id)}
-          style={deleteBtn}
-        >
+        <button onClick={() => onDelete(item.$id)} style={deleteBtn}>
           Delete
         </button>
       </td>
@@ -67,4 +66,3 @@ const deleteBtn = {
   borderRadius: "4px",
   cursor: "pointer",
 };
-

@@ -1,5 +1,7 @@
 import SharedModal from "./SharedModal";
 import { databases } from "../appwrite";
+import CategorySelect from "./CategorySelect";
+import SubcategorySelect from "./SubcategorySelect";
 
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
@@ -12,7 +14,6 @@ export default function InventoryEditForm({
   errorMessage,
   setErrorMessage,
   selectedHouse,
-  CATEGORY_OPTIONS,
   LIFE_OPTIONS,
 }) {
   const validate = (i) => {
@@ -20,16 +21,21 @@ export default function InventoryEditForm({
     if (i.Item.length > 20) return "Item must be at most 20 characters.";
     if (i.stock_type && i.stock_type.length > 20)
       return "Stock type must be at most 20 characters.";
-    if (!i.subcategory.trim()) return "Subcategory is required.";
-    if (i.subcategory.length > 20)
-      return "Subcategory must be at most 20 characters.";
+
+    if (!i.categoryId) return "Category is required.";
+    if (!i.subcategoryId) return "Subcategory is required.";
+
     if (isNaN(parseFloat(i.quantity))) return "Quantity must be a number.";
     if (parseFloat(i.quantity) < 0) return "Quantity cannot be negative.";
+
     if (i.Min_Stock && parseFloat(i.Min_Stock) < 0)
       return "Min Stock cannot be negative.";
+
     if (!i.Unit.trim()) return "Unit is required.";
     if (i.Unit.length > 10) return "Unit must be at most 10 characters.";
+
     if (!i.life.trim()) return "Life is required.";
+
     return null;
   };
 
@@ -64,19 +70,19 @@ export default function InventoryEditForm({
       )}
 
       <label>Category *</label>
-      <select
-        value={item.Category}
-        onChange={(e) => setItem({ ...item, Category: e.target.value })}
-        style={input}
-      >
-        {CATEGORY_OPTIONS.map((c) => (
-          <option key={c}>{c}</option>
-        ))}
-      </select>
+      <CategorySelect
+        value={item.categoryId}
+        onChange={(v) =>
+          setItem({ ...item, categoryId: v, subcategoryId: "" })
+        }
+      />
 
-      {field("Subcategory *", "text", item.subcategory, (v) =>
-        setItem({ ...item, subcategory: v })
-      )}
+      <label>Subcategory *</label>
+      <SubcategorySelect
+        categoryId={item.categoryId}
+        value={item.subcategoryId}
+        onChange={(v) => setItem({ ...item, subcategoryId: v })}
+      />
 
       <label>Life *</label>
       <select

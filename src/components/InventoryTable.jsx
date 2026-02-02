@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { databases, ID } from "../appwrite";
+import { databases } from "../appwrite";
 import { Query } from "appwrite";
 
 import InventoryAddForm from "./InventoryAddForm";
@@ -12,6 +12,9 @@ const COLLECTION_ID = "inventory_items";
 
 export default function InventoryTable({ selectedHouse }) {
   const [items, setItems] = useState([]);
+  const [categories, setCategories] = useState({});
+  const [subcategories, setSubcategories] = useState({});
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -20,13 +23,13 @@ export default function InventoryTable({ selectedHouse }) {
   const PAGE_SIZE = 100;
   const [totalItems, setTotalItems] = useState(0);
 
-  const [viewMode, setViewMode] = useState("table"); // "table" or "card"
+  const [viewMode, setViewMode] = useState("table");
 
   const emptyItem = {
     Item: "",
     stock_type: "",
-    Category: "Food",
-    subcategory: "",
+    categoryId: "",
+    subcategoryId: "",
     quantity: "",
     Min_Stock: "0",
     Unit: "",
@@ -38,20 +41,40 @@ export default function InventoryTable({ selectedHouse }) {
   const [newItem, setNewItem] = useState({ ...emptyItem });
   const [editItem, setEditItem] = useState(null);
 
-  const CATEGORY_OPTIONS = [
-    "Food",
-    "Household_Essentials",
-    "Personal_Care_&_Home_Care",
-    "Pet_Supplies",
-    "Baby_Supplies",
-  ];
-
   const LIFE_OPTIONS = [
     "Short-Life",
     "Medium-Life",
     "Long-Life",
     "Non-Perishable",
   ];
+
+  // ---------------------- LOAD CATEGORIES + SUBCATEGORIES ----------------------
+  const loadCategoryData = async () => {
+    try {
+      const catRes = await databases.listDocuments(
+        DB_ID,
+        "inventory_category"
+      );
+      const subRes = await databases.listDocuments(
+        DB_ID,
+        "inventory_subcategory"
+      );
+
+      setCategories(
+        Object.fromEntries(catRes.documents.map((c) => [c.$id, c.name]))
+      );
+
+      setSubcategories(
+        Object.fromEntries(subRes.documents.map((s) => [s.$id, s.name]))
+      );
+    } catch (err) {
+      console.error("Error loading categories:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadCategoryData();
+  }, []);
 
   // ---------------------- LOAD ITEMS ----------------------
   const loadItems = () => {
@@ -217,7 +240,6 @@ export default function InventoryTable({ selectedHouse }) {
           errorMessage={errorMessage}
           setErrorMessage={setErrorMessage}
           selectedHouse={selectedHouse}
-          CATEGORY_OPTIONS={CATEGORY_OPTIONS}
           LIFE_OPTIONS={LIFE_OPTIONS}
         />
       )}
@@ -240,7 +262,6 @@ export default function InventoryTable({ selectedHouse }) {
           errorMessage={errorMessage}
           setErrorMessage={setErrorMessage}
           selectedHouse={selectedHouse}
-          CATEGORY_OPTIONS={CATEGORY_OPTIONS}
           LIFE_OPTIONS={LIFE_OPTIONS}
         />
       )}
@@ -277,6 +298,8 @@ export default function InventoryTable({ selectedHouse }) {
                 <InventoryRow
                   key={item.$id}
                   item={item}
+                  categoryName={categories[item.categoryId]}
+                  subcategoryName={subcategories[item.subcategoryId]}
                   formatDate={formatDate}
                   getAlertBadge={getAlertBadge}
                   getRowStyle={(i) => ({
@@ -300,6 +323,8 @@ export default function InventoryTable({ selectedHouse }) {
             <InventoryCard
               key={item.$id}
               item={item}
+              categoryName={categories[item.categoryId]}
+              subcategoryName={subcategories[item.subcategoryId]}
               formatDate={formatDate}
               getAlertBadge={getAlertBadge}
               onEdit={openEditModal}

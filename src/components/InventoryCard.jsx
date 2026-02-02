@@ -1,5 +1,9 @@
+// components/InventoryCard.jsx
+
 export default function InventoryCard({
   item,
+  categoryName,
+  subcategoryName,
   formatDate,
   getAlertBadge,
   onEdit,
@@ -21,11 +25,11 @@ export default function InventoryCard({
 
       {/* Details */}
       <div style={infoRow}>
-        <span style={label}>Category:</span> {item.Category}
+        <span style={label}>Category:</span> {categoryName || "—"}
       </div>
 
       <div style={infoRow}>
-        <span style={label}>Subcategory:</span> {item.subcategory}
+        <span style={label}>Subcategory:</span> {subcategoryName || "—"}
       </div>
 
       <div style={infoRow}>
@@ -117,4 +121,3 @@ const deleteBtn = {
   borderRadius: "6px",
   cursor: "pointer",
 };
-

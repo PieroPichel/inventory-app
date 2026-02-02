@@ -65,7 +65,10 @@ export default function InventoryTable({ selectedHouse }) {
       );
 
       setSubcategories(
-        Object.fromEntries(subRes.documents.map((s) => [s.$id, s.name]))
+	    Object.fromEntries( subRes.documents.map((s) => [s.$id,
+	    {
+	     name: s.name, categoryId: s.categoryId,
+	    }, ]) )
       );
     } catch (err) {
       console.error("Error loading categories:", err);

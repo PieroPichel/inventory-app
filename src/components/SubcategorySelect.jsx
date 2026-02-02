@@ -1,3 +1,13 @@
+const selectStyle = {
+  width: "100%",
+  padding: "8px",
+  background: "#333",
+  color: "#fff",
+  border: "1px solid #555",
+  borderRadius: "4px",
+  marginBottom: "10px",
+};
+
 export default function SubcategorySelect({
   subcategories,
   categoryId,
@@ -19,7 +29,11 @@ export default function SubcategorySelect({
   const filtered = list.filter((s) => s.categoryId === categoryId);
 
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)}>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={selectStyle}
+    >
       <option value="">Select subcategory</option>
       {filtered.map((sub) => (
         <option key={sub.id} value={sub.id}>

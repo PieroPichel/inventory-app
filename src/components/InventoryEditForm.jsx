@@ -71,22 +71,27 @@ export default function InventoryEditForm({
         setItem({ ...item, stock_type: v })
       )}
 
-      <label>Category *</label>
-      <CategorySelect
-        categories={categories}
-        value={item.categoryId}
-        onChange={(v) =>
-          setItem({ ...item, categoryId: v, subcategoryId: "" })
-        }
-      />
+<div style={{ marginBottom: "10px" }}>
+  <label>Category *</label>
+  <CategorySelect
+    categories={categories}
+    value={item.categoryId}
+    onChange={(v) =>
+      setItem({ ...item, categoryId: v, subcategoryId: "" })
+    }
+  />
+</div>
 
-      <label>Subcategory *</label>
-      <SubcategorySelect
-        subcategories={subcategories}
-        categoryId={item.categoryId}
-        value={item.subcategoryId}
-        onChange={(v) => setItem({ ...item, subcategoryId: v })}
-      />
+<div style={{ marginBottom: "10px" }}>
+  <label>Subcategory *</label>
+  <SubcategorySelect
+    subcategories={subcategories}
+    categoryId={item.categoryId}
+    value={item.subcategoryId}
+    onChange={(v) => setItem({ ...item, subcategoryId: v })}
+  />
+</div>
+
 
       <label>Life *</label>
       <select

@@ -14,10 +14,8 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showNotes, setShowNotes] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
-  // ------------------------------------------------------------
-  // LOAD USER + HOUSES
-  // ------------------------------------------------------------
   useEffect(() => {
     const loadHouses = async () => {
       try {
@@ -61,9 +59,6 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
     loadHouses();
   }, []);
 
-  // ------------------------------------------------------------
-  // CHANGE HOUSE
-  // ------------------------------------------------------------
   const changeHouse = (houseId) => {
     const selected = houses.find((h) => h.$id === houseId);
     setCurrentHouse(selected);
@@ -71,191 +66,165 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
     onHouseChange(houseId);
   };
 
-  // ------------------------------------------------------------
-  // LOGOUT
-  // ------------------------------------------------------------
   const logout = async () => {
     await account.deleteSession("current");
     window.location.href = "/login";
   };
 
-  // ------------------------------------------------------------
-  // RENDER
-  // ------------------------------------------------------------
+  const handleExport = () => {
+    setShowMenu(false);
+    onExport && onExport();
+  };
+
+  const handleAdminExport = () => {
+    setShowMenu(false);
+    onAdminExport && onAdminExport();
+  };
+
+  const handleLogout = () => {
+    setShowMenu(false);
+    logout();
+  };
+
   return (
     <>
       {/* TOP BAR */}
-      <div
-        style={{
-          width: "100%",
-          height: "60px",
-          background: "#1a1a1a",
-          color: "white",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* Left: Logo + Title */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M4 14L16 4L28 14"
-              stroke="#ffffff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <rect
-              x="7"
-              y="14"
-              width="18"
-              height="13"
-              rx="2"
-              stroke="#ffffff"
-              strokeWidth="2"
+      <div style={topBar}>
+        {/* ROW 1 — Logo, Title, Version */}
+        <div style={row1}>
+          <div style={logoTitle}>
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 32 32"
               fill="none"
-            />
-            <line
-              x1="10"
-              y1="18"
-              x2="22"
-              y2="18"
-              stroke="#ffffff"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-            <line
-              x1="10"
-              y1="22"
-              x2="22"
-              y2="22"
-              stroke="#ffffff"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M4 14L16 4L28 14"
+                stroke="#ffffff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <rect
+                x="7"
+                y="14"
+                width="18"
+                height="13"
+                rx="2"
+                stroke="#ffffff"
+                strokeWidth="2"
+                fill="none"
+              />
+              <line
+                x1="10"
+                y1="18"
+                x2="22"
+                y2="18"
+                stroke="#ffffff"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <line
+                x1="10"
+                y1="22"
+                x2="22"
+                y2="22"
+                stroke="#ffffff"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
 
-          <h2 style={{ margin: 0, fontSize: "20px" }}>Household Inventory</h2>
-        </div>
-
-        {/* Middle: House selector */}
-        {loading ? (
-          <span style={{ color: "#aaa" }}>Loading houses…</span>
-        ) : houses.length > 0 ? (
-          <select
-            value={currentHouse?.$id || ""}
-            onChange={(e) => changeHouse(e.target.value)}
-            style={{
-              background: "#222",
-              color: "white",
-              border: "1px solid #444",
-              padding: "6px 10px",
-              borderRadius: "6px",
-            }}
-          >
-            {houses.map((h) => (
-              <option key={h.$id} value={h.$id}>
-                {h.name}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <span style={{ color: "#aaa" }}>No houses found</span>
-        )}
-
-        {/* Right: User + Version + Export + Logout */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {/* USER INFO + VERSION */}
-          {currentUser && (
-            <div style={{ textAlign: "right", lineHeight: "1.2" }}>
-              <div style={{ fontSize: "12px", color: "#bbb" }}>
-                {currentUser.name || currentUser.email}
-              </div>
-
-              <div
-                onClick={() => setShowNotes(!showNotes)}
-                style={{
-                  fontSize: "11px",
-                  color: "#888",
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                }}
-              >
-                Version {APP_VERSION}
-              </div>
-            </div>
-          )}
-
-          {/* NORMAL EXPORT (visible to all users) */}
-          <div
-            onClick={onExport}
-            style={{
-              fontSize: "12px",
-              background: "#333",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              border: "1px solid #555",
-            }}
-          >
-            Export CSV
+            <h2 style={{ margin: 0, fontSize: "20px" }}>Household Inventory</h2>
           </div>
 
-          {/* ADMIN EXPORT (only for your account) */}
-          {currentUser?.$id === "697e5fe8ee0456829a68" && (
-            <div
-              onClick={onAdminExport}
-              style={{
-                fontSize: "12px",
-                background: "#444",
-                padding: "6px 10px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                border: "1px solid #666",
-              }}
+          <div
+            onClick={() => setShowNotes(!showNotes)}
+            style={version}
+          >
+            Version {APP_VERSION}
+          </div>
+        </div>
+
+        {/* ROW 2 — House selector, user, menu */}
+        <div style={row2}>
+          {/* House selector */}
+          {loading ? (
+            <span style={{ color: "#aaa", fontSize: "13px" }}>
+              Loading houses…
+            </span>
+          ) : houses.length > 0 ? (
+            <select
+              value={currentHouse?.$id || ""}
+              onChange={(e) => changeHouse(e.target.value)}
+              style={houseSelect}
             >
-              Admin Export
+              {houses.map((h) => (
+                <option key={h.$id} value={h.$id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span style={{ color: "#aaa", fontSize: "13px" }}>
+              No houses found
+            </span>
+          )}
+
+          {/* User label (compact) */}
+          {currentUser && (
+            <div style={userBox}>
+              <span style={{ fontSize: "12px", color: "#bbb" }}>
+                {currentUser.name || currentUser.email}
+              </span>
             </div>
           )}
 
-          {/* LOGOUT */}
-          <button
-            onClick={logout}
-            style={{
-              background: "#e74c3c",
-              border: "none",
-              padding: "8px 14px",
-              borderRadius: "6px",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Log out
-          </button>
+          {/* 3-dot menu */}
+          <div style={menuWrapper}>
+            <button
+              style={menuButton}
+              onClick={() => setShowMenu((prev) => !prev)}
+            >
+              ⋮
+            </button>
+
+            {showMenu && (
+              <div style={menuDropdown}>
+                {currentUser && (
+                  <div style={menuHeader}>
+                    Signed in as
+                    <br />
+                    <span style={{ fontWeight: "bold" }}>
+                      {currentUser.name || currentUser.email}
+                    </span>
+                  </div>
+                )}
+
+                <button style={menuItem} onClick={handleExport}>
+                  Export CSV
+                </button>
+
+                {currentUser?.$id === "697e5fe8ee0456829a68" && (
+                  <button style={menuItem} onClick={handleAdminExport}>
+                    Admin Export
+                  </button>
+                )}
+
+                <button style={menuItemDanger} onClick={handleLogout}>
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* RELEASE NOTES DROPDOWN */}
       {showNotes && (
-        <div
-          style={{
-            background: "#1f1f1f",
-            color: "#eee",
-            padding: "15px",
-            borderBottom: "1px solid #333",
-            fontSize: "14px",
-          }}
-        >
+        <div style={notesBox}>
           <h4 style={{ marginTop: 0 }}>Recent Releases</h4>
 
           {RELEASE_NOTES.slice(0, 5).map((entry) => (
@@ -274,3 +243,115 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
     </>
   );
 }
+
+/* ---------------------- STYLES ---------------------- */
+
+const topBar = {
+  width: "100%",
+  background: "#1a1a1a",
+  color: "white",
+  padding: "10px 15px",
+  boxSizing: "border-box",
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+};
+
+const row1 = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+};
+
+const logoTitle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+};
+
+const version = {
+  fontSize: "11px",
+  color: "#888",
+  cursor: "pointer",
+  textDecoration: "underline",
+};
+
+const row2 = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  flexWrap: "wrap",
+};
+
+const houseSelect = {
+  background: "#222",
+  color: "white",
+  border: "1px solid #444",
+  padding: "6px 10px",
+  borderRadius: "6px",
+  fontSize: "13px",
+};
+
+const userBox = {
+  flexGrow: 1,
+  minWidth: "120px",
+};
+
+const menuWrapper = {
+  position: "relative",
+};
+
+const menuButton = {
+  background: "#333",
+  color: "#fff",
+  border: "1px solid #555",
+  borderRadius: "6px",
+  padding: "6px 10px",
+  cursor: "pointer",
+  fontSize: "16px",
+  lineHeight: "1",
+};
+
+const menuDropdown = {
+  position: "absolute",
+  right: 0,
+  top: "110%",
+  background: "#222",
+  border: "1px solid #444",
+  borderRadius: "8px",
+  padding: "8px 0",
+  minWidth: "180px",
+  zIndex: 1000,
+  boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
+};
+
+const menuHeader = {
+  padding: "6px 12px",
+  fontSize: "11px",
+  color: "#aaa",
+  borderBottom: "1px solid #333",
+};
+
+const menuItem = {
+  width: "100%",
+  textAlign: "left",
+  background: "transparent",
+  border: "none",
+  color: "#eee",
+  padding: "8px 12px",
+  fontSize: "13px",
+  cursor: "pointer",
+};
+
+const menuItemDanger = {
+  ...menuItem,
+  color: "#ff6b6b",
+};
+
+const notesBox = {
+  background: "#1f1f1f",
+  color: "#eee",
+  padding: "15px",
+  borderBottom: "1px solid #333",
+  fontSize: "14px",
+};

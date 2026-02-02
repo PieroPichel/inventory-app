@@ -65,10 +65,14 @@ export default function InventoryTable({ selectedHouse }) {
       );
 
       setSubcategories(
-	    Object.fromEntries( subRes.documents.map((s) => [s.$id,
+	    Object.fromEntries( 
+	     subRes.documents.map((s) => [
+	      s.$id,
 	    {
-	     name: s.name, categoryId: s.categoryId,
-	    }, ]) )
+	     name: s.name,
+	     categoryId: s.categoryId,
+	    },
+	   ]) )
       );
     } catch (err) {
       console.error("Error loading categories:", err);
@@ -306,7 +310,7 @@ export default function InventoryTable({ selectedHouse }) {
                   key={item.$id}
                   item={item}
                   categoryName={categories[item.categoryId]}
-                  subcategoryName={subcategories[item.subcategoryId]}
+                  subcategoryName={subcategories[item.subcategoryId]?.name}
                   formatDate={formatDate}
                   getAlertBadge={getAlertBadge}
                   getRowStyle={(i) => ({
@@ -331,7 +335,7 @@ export default function InventoryTable({ selectedHouse }) {
               key={item.$id}
               item={item}
               categoryName={categories[item.categoryId]}
-              subcategoryName={subcategories[item.subcategoryId]}
+              subcategoryName={subcategories[item.subcategoryId]?.name}
               formatDate={formatDate}
               getAlertBadge={getAlertBadge}
               onEdit={openEditModal}

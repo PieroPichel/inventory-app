@@ -26,7 +26,10 @@ export default function InventoryTable({
   const PAGE_SIZE = 100;
   const [totalItems, setTotalItems] = useState(0);
 
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState(() => {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    return isMobile ? "card" : "table";
+  });
 
   // ------------------------------------------------------------
   // NORMAL EXPORT (selected house only)
@@ -345,6 +348,31 @@ export default function InventoryTable({
     setShowEditModal(true);
     setErrorMessage("");
   };
+  // ------------------------------------------------------------
+  // INCREASE AND DECREASE QTY
+  // ------------------------------------------------------------
+  const increaseQty = async (item) => {
+  try {
+    await databases.updateDocument(DB_ID, COLLECTION_ID, item.$id, {
+      quantity: Number(item.quantity) + 1,
+    });
+    loadItems();
+  } catch (err) {
+    console.error("Increase failed:", err);
+  }
+};
+
+const decreaseQty = async (item) => {
+  try {
+    const newQty = Math.max(0, Number(item.quantity) - 1);
+    await databases.updateDocument(DB_ID, COLLECTION_ID, item.$id, {
+      quantity: newQty,
+    });
+    loadItems();
+  } catch (err) {
+    console.error("Decrease failed:", err);
+  }
+};
 
   // ------------------------------------------------------------
   // NO HOUSE SELECTED
@@ -530,6 +558,8 @@ export default function InventoryTable({
               getAlertBadge={getAlertBadge}
               onEdit={openEditModal}
               onDelete={deleteItem}
+              onIncrease={increaseQty}
+              onDecrease={decreaseQty}
             />
           ))}
         </div>

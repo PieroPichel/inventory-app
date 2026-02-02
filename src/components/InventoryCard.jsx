@@ -8,18 +8,26 @@ export default function InventoryCard({
   getAlertBadge,
   onEdit,
   onDelete,
+  onIncrease,
+  onDecrease,
 }) {
   return (
     <div style={card}>
-      {/* Header row: Item name + Qty */}
+      {/* Header row: Item name + Qty controls */}
       <div style={headerRow}>
         <div style={itemName}>
           {item.Item}
           <span style={{ marginLeft: 6 }}>{getAlertBadge(item)}</span>
         </div>
 
-        <div style={qtyBox}>
-          <strong>{item.quantity}</strong> {item.Unit}
+        <div style={qtyControls}>
+          <button style={qtyBtn} onClick={() => onDecrease(item)}>-</button>
+
+          <div style={qtyBox}>
+            <strong>{item.quantity}</strong> {item.Unit}
+          </div>
+
+          <button style={qtyBtn} onClick={() => onIncrease(item)}>+</button>
         </div>
       </div>
 
@@ -80,11 +88,33 @@ const itemName = {
   fontWeight: "bold",
 };
 
+const qtyControls = {
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+};
+
+const qtyBtn = {
+  background: "#444",
+  color: "#fff",
+  border: "1px solid #666",
+  width: "28px",
+  height: "28px",
+  borderRadius: "6px",
+  cursor: "pointer",
+  fontSize: "1rem",
+  lineHeight: "1rem",
+  textAlign: "center",
+  padding: 0,
+};
+
 const qtyBox = {
   background: "#333",
   padding: "6px 10px",
   borderRadius: "6px",
   fontSize: "0.9rem",
+  minWidth: "55px",
+  textAlign: "center",
 };
 
 const infoRow = {

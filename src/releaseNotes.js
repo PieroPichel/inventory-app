@@ -12,7 +12,7 @@ export const RELEASE_NOTES = [
     version: "1.0.2",
     date: "2026-02-01",
     notes: [
-      "First publishment"
+      "First publishment",
       "Added Card View",
       "Implemented multi-user",
       "Implemented multi-house"

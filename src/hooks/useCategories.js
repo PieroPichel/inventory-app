@@ -10,7 +10,7 @@ export function useCategories() {
       try {
         const res = await databases.listDocuments(
           "inventory",
-          "inventory_category"
+          "inventory_categories"
         );
         setCategories(res.documents);
       } finally {

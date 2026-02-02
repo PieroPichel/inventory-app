@@ -1,5 +1,11 @@
 export const RELEASE_NOTES = [
   {
+    version: "1.0.7",
+    date: "2026-02-02",
+    notes: [
+      "Remodeled add/edit form"
+    ]
+  },   {
     version: "1.0.6",
     date: "2026-02-02",
     notes: [

@@ -53,7 +53,7 @@ export default function InventoryTable({ selectedHouse }) {
     try {
       const catRes = await databases.listDocuments(
         DB_ID,
-        "inventory_category"
+        "inventory_categories"
       );
       const subRes = await databases.listDocuments(
         DB_ID,

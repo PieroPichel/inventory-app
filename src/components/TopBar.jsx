@@ -16,8 +16,11 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
   const [showNotes, setShowNotes] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
+  // ------------------------------------------------------------
+  // LOAD USER + HOUSES
+  // ------------------------------------------------------------
   useEffect(() => {
-    const loadHouses = async () => {
+    async function load() {
       try {
         const user = await account.get();
         setCurrentUser(user);
@@ -54,11 +57,14 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    loadHouses();
+    load();
   }, []);
 
+  // ------------------------------------------------------------
+  // CHANGE HOUSE
+  // ------------------------------------------------------------
   const changeHouse = (houseId) => {
     const selected = houses.find((h) => h.$id === houseId);
     setCurrentHouse(selected);
@@ -66,31 +72,27 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
     onHouseChange(houseId);
   };
 
+  // ------------------------------------------------------------
+  // LOGOUT
+  // ------------------------------------------------------------
   const logout = async () => {
     await account.deleteSession("current");
     window.location.href = "/login";
   };
 
-  const handleExport = () => {
+  // ------------------------------------------------------------
+  // MENU ACTIONS
+  // ------------------------------------------------------------
+  const handleMenuAction = (fn) => {
     setShowMenu(false);
-    onExport && onExport();
-  };
-
-  const handleAdminExport = () => {
-    setShowMenu(false);
-    onAdminExport && onAdminExport();
-  };
-
-  const handleLogout = () => {
-    setShowMenu(false);
-    logout();
+    fn && fn();
   };
 
   return (
     <>
       {/* TOP BAR */}
       <div style={topBar}>
-        {/* ROW 1 — Logo, Title, Version */}
+        {/* ROW 1 — Logo + Version */}
         <div style={row1}>
           <div style={logoTitle}>
             <svg
@@ -140,15 +142,12 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
             <h2 style={{ margin: 0, fontSize: "20px" }}>Household Inventory</h2>
           </div>
 
-          <div
-            onClick={() => setShowNotes(!showNotes)}
-            style={version}
-          >
+          <div onClick={() => setShowNotes(!showNotes)} style={version}>
             Version {APP_VERSION}
           </div>
         </div>
 
-        {/* ROW 2 — House selector, user, menu */}
+        {/* ROW 2 — House selector + User + Menu */}
         <div style={row2}>
           {/* House selector */}
           {loading ? (
@@ -173,7 +172,7 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
             </span>
           )}
 
-          {/* User label (compact) */}
+          {/* User label */}
           {currentUser && (
             <div style={userBox}>
               <span style={{ fontSize: "12px", color: "#bbb" }}>
@@ -184,10 +183,7 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
 
           {/* 3-dot menu */}
           <div style={menuWrapper}>
-            <button
-              style={menuButton}
-              onClick={() => setShowMenu((prev) => !prev)}
-            >
+            <button style={menuButton} onClick={() => setShowMenu(!showMenu)}>
               ⋮
             </button>
 
@@ -203,17 +199,20 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
                   </div>
                 )}
 
-                <button style={menuItem} onClick={handleExport}>
+                <button style={menuItem} onClick={() => handleMenuAction(onExport)}>
                   Export CSV
                 </button>
 
                 {currentUser?.$id === "697e5fe8ee0456829a68" && (
-                  <button style={menuItem} onClick={handleAdminExport}>
+                  <button
+                    style={menuItem}
+                    onClick={() => handleMenuAction(onAdminExport)}
+                  >
                     Admin Export
                   </button>
                 )}
 
-                <button style={menuItemDanger} onClick={handleLogout}>
+                <button style={menuItemDanger} onClick={() => handleMenuAction(logout)}>
                   Log out
                 </button>
               </div>
@@ -222,12 +221,12 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
         </div>
       </div>
 
-      {/* RELEASE NOTES DROPDOWN */}
+      {/* RELEASE NOTES */}
       {showNotes && (
         <div style={notesBox}>
           <h4 style={{ marginTop: 0 }}>Recent Releases</h4>
 
-          {RELEASE_NOTES.slice(0, 5).map((entry) => (
+          {RELEASE_NOTES.slice(0, 7).map((entry) => (
             <div key={entry.version} style={{ marginBottom: "12px" }}>
               <strong>{entry.version}</strong>{" "}
               <span style={{ color: "#aaa" }}>— {entry.date}</span>

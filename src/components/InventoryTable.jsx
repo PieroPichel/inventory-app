@@ -1,203 +1,83 @@
 import { useState, useEffect } from "react";
-import { databases, Query } from "../appwrite";
+
+import useCategoryData from "../utils/useCategoryData";
+import useInventoryItems from "../utils/useInventoryItems";
+
+import {
+  getDateBounds,
+  getAlertStatus,
+  getAlertBadge,
+  sortItems,
+} from "../utils/alertUtils";
+
+import {
+  increaseQty,
+  decreaseQty,
+  deleteItem,
+} from "../utils/itemActions";
+
+import {
+  exportItemsCSV,
+  exportAdminCSV,
+} from "../utils/exportUtils";
+
+import ViewModeSelector from "./ViewModeSelector";
 
 import InventoryAddForm from "./InventoryAddForm";
 import InventoryEditForm from "./InventoryEditForm";
 import InventoryRow from "./InventoryRow";
 import InventoryCard from "./InventoryCard";
 
-const DB_ID = "697dcef40009d64e2fe1";
-const COLLECTION_ID = "inventory_items";
-
 export default function InventoryTable({
   selectedHouse,
   onExportRequest,
-  onAdminExportRequest
+  onAdminExportRequest,
 }) {
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState({});
-  const [subcategories, setSubcategories] = useState({});
-
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const [page, setPage] = useState(0);
   const PAGE_SIZE = 100;
-  const [totalItems, setTotalItems] = useState(0);
 
+  // ------------------------------------------------------------
+  // CATEGORY + SUBCATEGORY DATA
+  // ------------------------------------------------------------
+  const { categories, subcategories } = useCategoryData();
+
+  // ------------------------------------------------------------
+  // ITEMS + PAGINATION
+  // ------------------------------------------------------------
+  const [page, setPage] = useState(0);
+  const { items, totalItems } = useInventoryItems(
+    selectedHouse,
+    page,
+    PAGE_SIZE
+  );
+
+  // ------------------------------------------------------------
+  // EXPORT CALLBACKS
+  // ------------------------------------------------------------
+  useEffect(() => {
+    if (onExportRequest) {
+      onExportRequest.current = () =>
+        exportItemsCSV(items, categories, subcategories);
+    }
+  }, [items, categories, subcategories]);
+
+  useEffect(() => {
+    if (onAdminExportRequest) {
+      onAdminExportRequest.current = () => exportAdminCSV();
+    }
+  }, []);
+
+  // ------------------------------------------------------------
+  // VIEW MODE
+  // ------------------------------------------------------------
   const [viewMode, setViewMode] = useState(() => {
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(
+      navigator.userAgent
+    );
     return isMobile ? "card" : "table";
   });
 
   // ------------------------------------------------------------
-  // NORMAL EXPORT (selected house only)
-  // ------------------------------------------------------------
-  const handleExport = () => {
-    if (!items.length) {
-      alert("No items to export.");
-      return;
-    }
-
-    const headers = [
-      "Item",
-      "Category",
-      "Subcategory",
-      "Life",
-      "Quantity",
-      "Min Stock",
-      "Unit",
-      "Location",
-      "Expiry Date",
-      "Item ID",
-      "Category ID",
-      "Subcategory ID",
-      "House ID"
-    ];
-
-    const rows = items.map((item) => {
-      const categoryName = categories[item.categoryId] || "";
-      const subcatObj = subcategories[item.subcategoryId];
-      const subcatName = subcatObj ? subcatObj.name : "";
-
-      return [
-        item.Item,
-        categoryName,
-        subcatName,
-        item.life,
-        item.quantity,
-        item.Min_Stock,
-        item.Unit,
-        item.storage_location,
-        item.expiry_date || "",
-        item.$id,
-        item.categoryId,
-        item.subcategoryId,
-        item.houseId
-      ]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(",");
-    });
-
-    const csvContent = [headers.join(","), ...rows].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "inventory_export.csv";
-    link.click();
-
-    URL.revokeObjectURL(url);
-  };
-
-  // Wire normal export to ref
-  useEffect(() => {
-    if (onExportRequest) {
-      onExportRequest.current = handleExport;
-    }
-  }, [items, categories, subcategories]);
-
-  // ------------------------------------------------------------
-  // ADMIN EXPORT (full DB dump)
-  // ------------------------------------------------------------
-  const handleAdminExport = async () => {
-    try {
-      const housesRes = await databases.listDocuments(DB_ID, "houses");
-      const categoriesRes = await databases.listDocuments(DB_ID, "inventory_categories");
-      const subcategoriesRes = await databases.listDocuments(DB_ID, "inventory_subcategory", [ Query.limit(500)]);
-      const itemsRes = await databases.listDocuments(DB_ID, COLLECTION_ID, [ Query.limit(1000)]);
-      const usersRes = await users.list([ Query.limit(500) ]);
-      const userHousesRes = await databases.listDocuments( DB_ID, "user_houses", [Query.limit(100)] );
-
-      const toCSV = (headers, rows) => {
-        const headerLine = headers.join(",");
-        const rowLines = rows.map((r) =>
-          r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")
-        );
-        return [headerLine, ...rowLines].join("\n");
-      };
-
-      const housesCSV = toCSV(
-        ["House ID", "Name"],
-        housesRes.documents.map((h) => [h.$id, h.name])
-      );
-
-      const categoriesCSV = toCSV(
-        ["Category ID", "Name"],
-        categoriesRes.documents.map((c) => [c.$id, c.name])
-      );
-
-      const subcategoriesCSV = toCSV(
-        ["Subcategory ID", "Name", "Category ID"],
-        subcategoriesRes.documents.map((s) => [s.$id, s.name, s.categoryId])
-      );
-
-      const itemsCSV = toCSV(
-        [
-          "Item",
-          "Category ID",
-          "Subcategory ID",
-          "Life",
-          "Quantity",
-          "Min Stock",
-          "Unit",
-          "Location",
-          "Expiry Date",
-          "Item ID",
-          "House ID"
-        ],
-        itemsRes.documents.map((i) => [
-          i.Item,
-          i.categoryId,
-          i.subcategoryId,
-          i.life,
-          i.quantity,
-          i.Min_Stock,
-          i.Unit,
-          i.storage_location,
-          i.expiry_date || "",
-          i.$id,
-          i.houseId
-        ])
-      );
-
-      const finalCSV =
-        "=== HOUSES ===\n" +
-        housesCSV +
-        "\n\n=== CATEGORIES ===\n" +
-        categoriesCSV +
-        "\n\n=== SUBCATEGORIES ===\n" +
-        subcategoriesCSV +
-        "\n\n=== ITEMS ===\n" +
-        itemsCSV;
-
-      const blob = new Blob([finalCSV], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "admin_export_full_dump.csv";
-      link.click();
-
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Admin export failed:", err);
-      alert("Admin export failed — check console.");
-    }
-  };
-
-  // Wire admin export to ref
-  useEffect(() => {
-    if (onAdminExportRequest) {
-      onAdminExportRequest.current = handleAdminExport;
-    }
-  }, [items, categories, subcategories]);
-
-  // ------------------------------------------------------------
-  // EMPTY ITEM TEMPLATE
+  // ADD / EDIT MODALS
   // ------------------------------------------------------------
   const emptyItem = {
     Item: "",
@@ -213,6 +93,9 @@ export default function InventoryTable({
 
   const [newItem, setNewItem] = useState({ ...emptyItem });
   const [editItem, setEditItem] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const LIFE_OPTIONS = [
     "Short-Life",
@@ -222,55 +105,10 @@ export default function InventoryTable({
   ];
 
   // ------------------------------------------------------------
-  // LOAD CATEGORIES + SUBCATEGORIES
+  // ALERT + SORTING
   // ------------------------------------------------------------
-  const loadCategoryData = async () => {
-    try {
-      const catRes = await databases.listDocuments(DB_ID, "inventory_categories");
-      const subRes = await databases.listDocuments(DB_ID, "inventory_subcategory", [ Query.limit(500)]);
-
-      setCategories(
-        Object.fromEntries(catRes.documents.map((c) => [c.$id, c.name]))
-      );
-
-      setSubcategories(
-        Object.fromEntries(
-          subRes.documents.map((s) => [
-            s.$id,
-            { name: s.name, categoryId: s.categoryId },
-          ])
-        )
-      );
-    } catch (err) {
-      console.error("Error loading categories:", err);
-    }
-  };
-
-  useEffect(() => {
-    loadCategoryData();
-  }, []);
-  // ------------------------------------------------------------
-  // LOAD ITEMS
-  // ------------------------------------------------------------
-  const loadItems = () => {
-    if (!selectedHouse) return;
-
-    databases
-      .listDocuments(DB_ID, COLLECTION_ID, [
-        Query.equal("houseId", selectedHouse),
-        Query.limit(PAGE_SIZE),
-        Query.offset(page * PAGE_SIZE),
-      ])
-      .then((res) => {
-        setItems(res.documents);
-        setTotalItems(res.total);
-      })
-      .catch((err) => console.error("Error loading items:", err));
-  };
-
-  useEffect(() => {
-    loadItems();
-  }, [page, selectedHouse]);
+  const { today, oneWeekFromNow } = getDateBounds();
+  const sortedItems = sortItems(items, today, oneWeekFromNow);
 
   // ------------------------------------------------------------
   // DATE FORMAT
@@ -283,61 +121,6 @@ export default function InventoryTable({
   };
 
   // ------------------------------------------------------------
-  // ALERT LOGIC
-  // ------------------------------------------------------------
-  const today = new Date();
-  const oneWeekFromNow = new Date(today);
-  oneWeekFromNow.setDate(today.getDate() + 7);
-
-  const getAlertStatus = (item) => {
-    const quantity = Number(item.quantity);
-    const minStock = Number(item.Min_Stock ?? 0);
-    const expiry = item.expiry_date ? new Date(item.expiry_date) : null;
-
-    if (!isNaN(quantity) && !isNaN(minStock) && quantity < minStock) return "low";
-    if (expiry && expiry < today) return "expired";
-    if (expiry && expiry >= today && expiry <= oneWeekFromNow) return "soon";
-    return null;
-  };
-
-  const getAlertBadge = (item) => {
-    const status = getAlertStatus(item);
-
-    if (status === "expired")
-      return <span style={{ color: "#ff6666", fontWeight: "bold" }}>Expired</span>;
-
-    if (status === "soon")
-      return <span style={{ color: "#ffcc66", fontWeight: "bold" }}>Soon</span>;
-
-    if (status === "low")
-      return <span style={{ color: "#ffff66", fontWeight: "bold" }}>Low</span>;
-
-    return null;
-  };
-
-  // ------------------------------------------------------------
-  // SORT ITEMS (alerts first)
-  // ------------------------------------------------------------
-  const sortedItems = [...items].sort((a, b) => {
-    const aAlert = getAlertStatus(a) ? 1 : 0;
-    const bAlert = getAlertStatus(b) ? 1 : 0;
-    return bAlert - aAlert;
-  });
-
-  // ------------------------------------------------------------
-  // DELETE ITEM
-  // ------------------------------------------------------------
-  const deleteItem = async (id) => {
-    try {
-      await databases.deleteDocument(DB_ID, COLLECTION_ID, id);
-      loadItems();
-    } catch (err) {
-      console.error("Delete failed:", err);
-      alert("Delete failed — check Appwrite permissions.");
-    }
-  };
-
-  // ------------------------------------------------------------
   // OPEN EDIT MODAL
   // ------------------------------------------------------------
   const openEditModal = (item) => {
@@ -345,31 +128,6 @@ export default function InventoryTable({
     setShowEditModal(true);
     setErrorMessage("");
   };
-  // ------------------------------------------------------------
-  // INCREASE AND DECREASE QTY
-  // ------------------------------------------------------------
-  const increaseQty = async (item) => {
-  try {
-    await databases.updateDocument(DB_ID, COLLECTION_ID, item.$id, {
-      quantity: Number(item.quantity) + 1,
-    });
-    loadItems();
-  } catch (err) {
-    console.error("Increase failed:", err);
-  }
-};
-
-const decreaseQty = async (item) => {
-  try {
-    const newQty = Math.max(0, Number(item.quantity) - 1);
-    await databases.updateDocument(DB_ID, COLLECTION_ID, item.$id, {
-      quantity: newQty,
-    });
-    loadItems();
-  } catch (err) {
-    console.error("Decrease failed:", err);
-  }
-};
 
   // ------------------------------------------------------------
   // NO HOUSE SELECTED
@@ -381,9 +139,6 @@ const decreaseQty = async (item) => {
       </div>
     );
   }
-  // ------------------------------------------------------------
-  // MAIN RENDER
-  // ------------------------------------------------------------
   return (
     <div
       style={{
@@ -406,23 +161,7 @@ const decreaseQty = async (item) => {
           {Math.max(1, Math.ceil(totalItems / PAGE_SIZE))})
         </h3>
 
-        {/* VIEW MODE SELECTOR */}
-        <select
-          value={viewMode}
-          onChange={(e) => setViewMode(e.target.value)}
-          style={{
-            padding: "8px",
-            background: "#333",
-            color: "#fff",
-            border: "1px solid #555",
-            borderRadius: "6px",
-            cursor: "pointer",
-            height: "40px",
-          }}
-        >
-          <option value="table">Table View</option>
-          <option value="card">Card View</option>
-        </select>
+        <ViewModeSelector viewMode={viewMode} setViewMode={setViewMode} />
       </div>
 
       {/* ADD BUTTON */}
@@ -454,7 +193,6 @@ const decreaseQty = async (item) => {
             setShowAddModal(false);
             setNewItem({ ...emptyItem });
             setPage(0);
-            loadItems();
           }}
           errorMessage={errorMessage}
           setErrorMessage={setErrorMessage}
@@ -478,7 +216,6 @@ const decreaseQty = async (item) => {
           onUpdated={() => {
             setShowEditModal(false);
             setEditItem(null);
-            loadItems();
           }}
           errorMessage={errorMessage}
           setErrorMessage={setErrorMessage}
@@ -489,9 +226,7 @@ const decreaseQty = async (item) => {
         />
       )}
 
-      {/* ------------------------------------------------------------
-          TABLE VIEW
-      ------------------------------------------------------------ */}
+      {/* TABLE VIEW */}
       {viewMode === "table" && (
         <div style={{ overflowX: "auto" }}>
           <table
@@ -518,52 +253,68 @@ const decreaseQty = async (item) => {
             </thead>
 
             <tbody>
-              {sortedItems.map((item) => (
-                <InventoryRow
-                  key={item.$id}
-                  item={item}
-                  categoryName={categories[item.categoryId]}
-                  subcategoryName={subcategories[item.subcategoryId]?.name}
-                  formatDate={formatDate}
-                  getAlertBadge={getAlertBadge}
-                  getRowStyle={(i) => ({
-                    background: "#121212",
-                    color: "#eee",
-                    fontWeight: getAlertStatus(i) ? "bold" : "normal",
-                  })}
-                  onEdit={openEditModal}
-                  onDelete={deleteItem}
-                />
-              ))}
+              {sortedItems.map((item) => {
+                const status = getAlertStatus(item, today, oneWeekFromNow);
+
+                return (
+                  <InventoryRow
+                    key={item.$id}
+                    item={item}
+                    categoryName={categories[item.categoryId]}
+                    subcategoryName={subcategories[item.subcategoryId]?.name}
+                    formatDate={formatDate}
+                    getAlertBadge={() => getAlertBadge(status)}
+                    getRowStyle={() => ({
+                      background: "#121212",
+                      color: "#eee",
+                      fontWeight: status ? "bold" : "normal",
+                    })}
+                    onEdit={openEditModal}
+                    onDelete={async () => {
+                      const ok = await deleteItem(item.$id);
+                      if (ok) setPage((p) => p); // triggers reload via hook
+                    }}
+                  />
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
-      {/* ------------------------------------------------------------
-          CARD VIEW
-      ------------------------------------------------------------ */}
+
+      {/* CARD VIEW */}
       {viewMode === "card" && (
         <div>
-          {sortedItems.map((item) => (
-            <InventoryCard
-              key={item.$id}
-              item={item}
-              categoryName={categories[item.categoryId]}
-              subcategoryName={subcategories[item.subcategoryId]?.name}
-              formatDate={formatDate}
-              getAlertBadge={getAlertBadge}
-              onEdit={openEditModal}
-              onDelete={deleteItem}
-              onIncrease={increaseQty}
-              onDecrease={decreaseQty}
-            />
-          ))}
+          {sortedItems.map((item) => {
+            const status = getAlertStatus(item, today, oneWeekFromNow);
+
+            return (
+              <InventoryCard
+                key={item.$id}
+                item={item}
+                categoryName={categories[item.categoryId]}
+                subcategoryName={subcategories[item.subcategoryId]?.name}
+                formatDate={formatDate}
+                getAlertBadge={() => getAlertBadge(status)}
+                onEdit={openEditModal}
+                onDelete={async () => {
+                  const ok = await deleteItem(item.$id);
+                  if (ok) setPage((p) => p);
+                }}
+                onIncrease={async () => {
+                  const ok = await increaseQty(item);
+                  if (ok) setPage((p) => p);
+                }}
+                onDecrease={async () => {
+                  const ok = await decreaseQty(item);
+                  if (ok) setPage((p) => p);
+                }}
+              />
+            );
+          })}
         </div>
       )}
-
-      {/* ------------------------------------------------------------
-          PAGINATION
-      ------------------------------------------------------------ */}
+      {/* PAGINATION */}
       <div
         style={{
           marginTop: "20px",

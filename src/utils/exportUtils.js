@@ -3,7 +3,7 @@
 // Centralized CSV + Admin Export logic
 // ------------------------------------------------------------
 
-import { databases, users, Query } from "../appwrite";
+import { databases, Query } from "../appwrite";
 
 const DB_ID = "697dcef40009d64e2fe1";
 const ITEMS_COLLECTION = "inventory_items";
@@ -86,7 +86,7 @@ export function exportItemsCSV(items, categories, subcategories) {
 }
 
 // ------------------------------------------------------------
-// ADMIN EXPORT (full DB dump)
+// ADMIN EXPORT (full DB dump — WITHOUT USERS)
 // ------------------------------------------------------------
 export async function exportAdminCSV() {
   try {
@@ -94,7 +94,6 @@ export async function exportAdminCSV() {
     const categoriesRes = await databases.listDocuments(DB_ID, "inventory_categories", [Query.limit(500)]);
     const subcategoriesRes = await databases.listDocuments(DB_ID, "inventory_subcategory", [Query.limit(1000)]);
     const itemsRes = await databases.listDocuments(DB_ID, ITEMS_COLLECTION, [Query.limit(1000)]);
-    const usersRes = await users.list([Query.limit(500)]);
     const userHousesRes = await databases.listDocuments(DB_ID, "user_houses", [Query.limit(500)]);
 
     // Build CSV sections
@@ -142,17 +141,12 @@ export async function exportAdminCSV() {
       ])
     );
 
-    const usersCSV = toCSV(
-      ["User ID", "Name", "Email"],
-      usersRes.users.map((u) => [u.$id, u.name, u.email])
-    );
-
     const userHousesCSV = toCSV(
       ["Record ID", "User ID", "House ID"],
       userHousesRes.documents.map((uh) => [uh.$id, uh.userId, uh.houseId])
     );
 
-    // Combine into one file
+    // Combine into one file (NO USERS SECTION)
     const finalCSV =
       "=== HOUSES ===\n" +
       housesCSV +
@@ -162,8 +156,6 @@ export async function exportAdminCSV() {
       subcategoriesCSV +
       "\n\n=== ITEMS ===\n" +
       itemsCSV +
-      "\n\n=== USERS ===\n" +
-      usersCSV +
       "\n\n=== USER_HOUSES ===\n" +
       userHousesCSV;
 

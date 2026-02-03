@@ -107,7 +107,7 @@ export default function InventoryTable({
     try {
       const housesRes = await databases.listDocuments(DB_ID, "houses");
       const categoriesRes = await databases.listDocuments(DB_ID, "inventory_categories");
-      const subcategoriesRes = await databases.listDocuments(DB_ID, "inventory_subcategory");
+      const subcategoriesRes = await databases.listDocuments(DB_ID, "inventory_subcategory", [ Query.limit(500)]);
       const itemsRes = await databases.listDocuments(DB_ID, COLLECTION_ID);
 
       const toCSV = (headers, rows) => {

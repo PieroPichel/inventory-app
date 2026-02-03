@@ -8,7 +8,7 @@ import {
   getAlertStatus,
   getAlertBadge,
   sortItems,
-} from "../utils/alertUtils";
+} from "./alertUtils";
 
 import {
   increaseQty,

@@ -3,7 +3,7 @@ export const RELEASE_NOTES = [
     version: "1.0.8",
     date: "2026-02-03",
     notes: [
-      "Fixed limit query (subcategories missed)"
+      "Fixed limit query (subcategories missed)",
       "Major changes in backend codes and estructure to allow future improvements"
     ]
   },

@@ -225,7 +225,7 @@ export default function InventoryTable({
   const loadCategoryData = async () => {
     try {
       const catRes = await databases.listDocuments(DB_ID, "inventory_categories");
-      const subRes = await databases.listDocuments(DB_ID, "inventory_subcategory");
+      const subRes = await databases.listDocuments(DB_ID, "inventory_subcategory", [ Query.limit(500)]);
 
       setCategories(
         Object.fromEntries(catRes.documents.map((c) => [c.$id, c.name]))

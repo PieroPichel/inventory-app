@@ -1,0 +1,68 @@
+Household Inventory App - Dev/Prod Environment Setup Guide
+==========================================================
+
+Overview:
+---------
+This document explains how to create separate development and production environments for the Household Inventory App using Appwrite, Vercel, and Git.
+
+Why Separate Environments:
+--------------------------
+- Prevent breaking production
+- Test safely
+- Maintain clean data separation
+- Enable preview deployments
+
+Appwrite Setup:
+---------------
+- Create two Appwrite projects: household_inventory_prod and household_inventory_dev
+- Duplicate collections:
+    - houses
+    - inventory_categories
+    - inventory_subcategory
+    - inventory_items
+    - user_houses
+- Ensure permissions match between both projects
+
+Vercel Setup:
+-------------
+- Add environment variables for both Production and Preview environments:
+    - VITE_APPWRITE_ENDPOINT
+    - VITE_APPWRITE_PROJECT
+    - VITE_APPWRITE_DATABASE
+- Production variables point to prod Appwrite project
+- Preview variables point to dev Appwrite project
+
+Git Workflow:
+-------------
+- Create dev branch:
+    git checkout -b dev
+- Push to dev:
+    git push -u origin dev
+- Vercel auto-creates preview deployments
+- Merge dev -> main when ready for production:
+    git checkout main
+    git merge dev
+    git push
+
+Environment Variables:
+----------------------
+Use import.meta.env in appwrite.js:
+
+    const client = new Client()
+      .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
+      .setProject(import.meta.env.VITE_APPWRITE_PROJECT);
+
+    const DB_ID = import.meta.env.VITE_APPWRITE_DATABASE;
+
+Domain Setup:
+-------------
+- Production: inventory.bitswork.net
+- Development: inventory-dev.bitswork.net (optional)
+
+Final Checklist:
+----------------
+- [ ] Two Appwrite projects created
+- [ ] Vercel variables configured
+- [ ] dev branch created
+- [ ] Preview deployments working
+- [ ] Production deploys only from main branch

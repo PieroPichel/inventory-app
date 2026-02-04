@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-
 import useCategoryData from "../utils/useCategoryData";
 import useInventoryItems from "../utils/useInventoryItems";
+import ReceiptScanner from "./ReceiptScanner";
 
 import {
   getDateBounds,
@@ -111,6 +111,11 @@ export default function InventoryTable({
   const sortedItems = sortItems(items, today, oneWeekFromNow);
 
   // ------------------------------------------------------------
+  // Scanner useState hook
+  // ------------------------------------------------------------
+  const [showScanner, setShowScanner] = useState(false);
+
+  // ------------------------------------------------------------
   // DATE FORMAT
   // ------------------------------------------------------------
   const formatDate = (dateString) => {
@@ -179,6 +184,26 @@ export default function InventoryTable({
       >
         + Add Item
       </button>
+      
+      <button
+       onClick={() => setShowScanner(true)}
+       style={{
+        padding: "10px 20px",
+        marginBottom: "20px",
+        background: "#333",
+        color: "#fff",
+        border: "1px solid #555",
+        borderRadius: "6px",
+        cursor: "pointer",
+       }}
+      >
+       📸 Scan Receipt
+      </button>
+
+      {showScanner && (
+        <ReceiptScanner onClose={() => setShowScanner(false)} />
+      )}
+
 
       {/* ADD FORM */}
       {showAddModal && (

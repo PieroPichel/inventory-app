@@ -1,0 +1,49 @@
+┌──────────────────────────────┐
+│        User on Mobile        │
+│   taps "Scan Receipt"        │
+└───────────────┬──────────────┘
+                ▼
+      ┌────────────────────┐
+      │  Camera Capture     │
+      │ (getUserMedia API)  │
+      └─────────┬──────────┘
+                ▼
+      ┌────────────────────┐
+      │  Tesseract.js OCR   │
+      │ (Browser-side)      │
+      └─────────┬──────────┘
+                ▼
+      ┌──────────────────────────────────────┐
+      │ Raw OCR Text (messy, unstructured)   │
+      └─────────┬────────────────────────────┘
+                ▼
+      ┌──────────────────────────────────────┐
+      │ Send OCR text to Free LLM API        │
+      │ (HuggingFace / DeepSeek / Local LLM) │
+      └─────────┬────────────────────────────┘
+                ▼
+      ┌──────────────────────────────────────┐
+      │ LLM interprets receipt:              │
+      │  - Extracts item names               │
+      │  - Extracts quantities               │
+      │  - Ignores prices/totals             │
+      │  - Normalizes names                  │
+      └─────────┬────────────────────────────┘
+                ▼
+      ┌──────────────────────────────────────┐
+      │ App matches extracted items to       │
+      │ existing inventory (fuzzy matching)  │
+      └─────────┬────────────────────────────┘
+                ▼
+      ┌──────────────────────────────────────┐
+      │ Confirmation UI                      │
+      │  - Show suggested updates            │
+      │  - Allow editing                     │
+      │  - Allow adding new items            │
+      └─────────┬────────────────────────────┘
+                ▼
+      ┌──────────────────────────────────────┐
+      │ Apply updates to Appwrite database   │
+      │  - Increase quantities               │
+      │  - Create new items                  │
+      └──────────────────────────────────────┘

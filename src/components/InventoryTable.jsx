@@ -185,20 +185,23 @@ export default function InventoryTable({
         + Add Item
       </button>
       
-      <button
-       onClick={() => setShowScanner(true)}
-       style={{
-        padding: "10px 20px",
-        marginBottom: "20px",
-        background: "#333",
-        color: "#fff",
-        border: "1px solid #555",
-        borderRadius: "6px",
-        cursor: "pointer",
-       }}
-      >
-       📸 Scan Receipt
-      </button>
+
+  {/*
+  <button
+    onClick={() => setShowScanner(true)}
+    style={{
+      padding: "10px 20px",
+      marginBottom: "20px",
+      background: "#333",
+      color: "#fff",
+      border: "1px solid #555",
+      borderRadius: "6px",
+      cursor: "pointer",
+    }}
+  >
+    📸 Scan Receipt
+  </button>
+*/}
 
       {showScanner && (
         <ReceiptScanner onClose={() => setShowScanner(false)} />

@@ -2,10 +2,6 @@ import { useState, useRef } from "react";
 import Tesseract from "tesseract.js";
 import { parseReceiptText } from "../utils/receiptLLM";
 
-console.log("LOCAL HF TOKEN:", import.meta.env.VITE_HF_TOKEN);
-console.log("SERVER HF_TOKEN:", process.env.HF_TOKEN);
-
-
 export default function ReceiptScanner({ onClose }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);

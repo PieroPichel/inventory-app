@@ -19,12 +19,6 @@ OCR text:
 ${ocrText}
 `;
 
-  const response = await fetch("/api/parseReceipt", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ inputs: prompt }),
-  });
-
   const data = await response.json();
   console.log("LLM raw response:", data);
 

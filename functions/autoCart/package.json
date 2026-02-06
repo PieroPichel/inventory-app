@@ -1,5 +1,8 @@
 {
   "type": "module",
+  "scripts": {
+    "build": "echo 'no build step'"
+  },
   "dependencies": {
     "node-appwrite": "^13.0.0"
   }

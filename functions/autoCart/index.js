@@ -3,24 +3,15 @@ import { resolveCartMode } from "./logic/cartStateMachine.js";
 
 export default async ({ req, res, log }) => {
   try {
-  
-  	log("DEBUG BODY: " + JSON.stringify(req.body));
-	return res.json({ debug: req.body });
+    const item = req.body;
 
-    const event = req.body.events?.[0];
-    if (!event) {
-      log("No event payload");
-      return res.json({ status: "ignored" });
-    }
-
-    const item = event.payload;
-    if (!item) {
+    if (!item || !item.$id) {
       log("No item payload");
       return res.json({ status: "ignored" });
     }
 
     const qty = item.quantity;
-    const min = item.min_stock;
+    const min = item.Min_Stock; // matches your document field name
     const mode = item.cart_mode;
 
     const nextMode = resolveCartMode({ qty, min, mode });

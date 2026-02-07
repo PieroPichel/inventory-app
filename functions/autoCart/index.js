@@ -3,6 +3,10 @@ import { resolveCartMode } from "./logic/cartStateMachine.js";
 
 export default async ({ req, res, log }) => {
   try {
+  
+  	log("DEBUG BODY: " + JSON.stringify(req.body));
+	return res.json({ debug: req.body });
+
     const event = req.body.events?.[0];
     if (!event) {
       log("No event payload");

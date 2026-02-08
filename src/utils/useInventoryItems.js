@@ -9,7 +9,7 @@ import { databases, Query } from "../appwrite";
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
 
-export default function useInventoryItems(selectedHouse, page, pageSize) {
+export default function useInventoryItems(selectedHouse, page, pageSize, refreshKey) {
   const [items, setItems] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -31,7 +31,7 @@ export default function useInventoryItems(selectedHouse, page, pageSize) {
         setTotalItems(res.total);
       })
       .catch((err) => console.error("Error loading items:", err));
-  }, [selectedHouse, page, pageSize]);
+  }, [selectedHouse, page, pageSize, refreshKey]);
 
   return { items, totalItems };
 }

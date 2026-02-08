@@ -1,0 +1,483 @@
+import { useState, useEffect } from "react";
+import useCategoryData from "../utils/useCategoryData";
+import useInventoryItems from "../utils/useInventoryItems";
+
+import InventoryRow from "./InventoryRow";
+import InventoryCard from "./InventoryCard";
+import InventoryAddForm from "./InventoryAddForm";
+import InventoryEditForm from "./InventoryEditForm";
+
+import {
+  getDateBounds,
+  getAlertBadge,
+  getAlertStatus,
+} from "./alertUtils";
+
+import {
+  increaseQty,
+  decreaseQty,
+  deleteItem,
+} from "../utils/itemActions";
+
+export default function InventoryTable({ selectedHouse }) {
+  const PAGE_SIZE = 100;
+
+  const [page, setPage] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const { categories, subcategories } = useCategoryData();
+  const { items, totalItems } = useInventoryItems(
+    selectedHouse,
+    page,
+    PAGE_SIZE,
+    refreshKey
+  );
+
+  const { today, oneWeekFromNow } = getDateBounds();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("any");
+  const [locationFilter, setLocationFilter] = useState("any");
+  const [sortField, setSortField] = useState("item");
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [alertsFirst, setAlertsFirst] = useState(true);
+
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 900 ? "card" : "table";
+    }
+    return "table";
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 900) {
+        setViewMode("card");
+      } else {
+        setViewMode("table");
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const normalizeLocation = (s) => (s || "").trim().toLowerCase();
+
+  const categoryOptions = (() => {
+    const term = searchTerm.trim().toLowerCase();
+    const names = new Set();
+
+    (items || []).forEach((item) => {
+      const name = (item.Item || "").toLowerCase();
+      const catName = (categories[item.categoryId] || "").toLowerCase();
+      const loc = (item.storage_location || "").toLowerCase();
+
+      if (term && !(name.includes(term) || catName.includes(term) || loc.includes(term))) return;
+
+      if (locationFilter !== "any") {
+        const itemLoc = item.storage_location || "";
+        if (!itemLoc) return;
+        if (normalizeLocation(itemLoc) !== normalizeLocation(locationFilter)) return;
+      }
+
+      const cname = categories[item.categoryId];
+      if (cname) names.add(cname);
+    });
+
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  })();
+
+  const locationOptions = (() => {
+    const term = searchTerm.trim().toLowerCase();
+    const locMap = new Map();
+
+    (items || []).forEach((item) => {
+      const name = (item.Item || "").toLowerCase();
+      const catName = (categories[item.categoryId] || "").toLowerCase();
+      const loc = (item.storage_location || "").toLowerCase();
+
+      if (term && !(name.includes(term) || catName.includes(term) || loc.includes(term))) return;
+
+      if (categoryFilter !== "any") {
+        const itemCat = categories[item.categoryId] || "";
+        if (itemCat !== categoryFilter) return;
+      }
+
+      const raw = item.storage_location || "";
+      const trimmed = raw.trim();
+      if (!trimmed) return;
+
+      const norm = normalizeLocation(trimmed);
+      if (!locMap.has(norm)) locMap.set(norm, trimmed);
+    });
+
+    return Array.from(locMap.values()).sort((a, b) => a.localeCompare(b));
+  })();
+
+  const filteredItems = (() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return (items || []).filter((item) => {
+      const name = (item.Item || "").toLowerCase();
+      const catName = (categories[item.categoryId] || "").toLowerCase();
+      const loc = (item.storage_location || "").toLowerCase();
+
+      if (term && !(name.includes(term) || catName.includes(term) || loc.includes(term))) {
+        return false;
+      }
+
+      if (categoryFilter !== "any") {
+        const itemCat = categories[item.categoryId] || "";
+        if (itemCat !== categoryFilter) return false;
+      }
+
+      if (locationFilter !== "any") {
+        const itemLoc = item.storage_location || "";
+        if (!itemLoc) return false;
+        if (normalizeLocation(itemLoc) !== normalizeLocation(locationFilter)) return false;
+      }
+
+      return true;
+    });
+  })();
+
+  const sortedItems = (() => {
+    return [...filteredItems].sort((a, b) => {
+      const alertRank = (item) => {
+        const status = getAlertStatus(item, today, oneWeekFromNow);
+        if (status === "expired") return 3;
+        if (status === "low") return 2;
+        if (status === "soon") return 1;
+        return 0;
+      };
+
+      if (alertsFirst) {
+        const diff = alertRank(b) - alertRank(a);
+        if (diff !== 0) return diff;
+      }
+
+      let aVal = "";
+      let bVal = "";
+
+      if (sortField === "item") {
+        aVal = (a.Item || "").toLowerCase();
+        bVal = (b.Item || "").toLowerCase();
+      } else if (sortField === "category") {
+        aVal = (categories[a.categoryId] || "").toLowerCase();
+        bVal = (categories[b.categoryId] || "").toLowerCase();
+      } else if (sortField === "location") {
+        aVal = (a.storage_location || "").toLowerCase();
+        bVal = (b.storage_location || "").toLowerCase();
+
+        const aEmpty = a.storage_location?.trim() === "";
+        const bEmpty = b.storage_location?.trim() === "";
+        if (aEmpty && !bEmpty) return 1;
+        if (!aEmpty && bEmpty) return -1;
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  })();
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    return date.toLocaleDateString();
+  };
+
+  const openEditModal = (item) => {
+    setEditItem({ ...item });
+    setShowEditModal(true);
+  };
+
+  if (!selectedHouse) {
+    return (
+      <div style={{ padding: "20px", color: "#eee" }}>
+        <h3>Select a house to view inventory</h3>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "20px", background: "#121212", minHeight: "100vh", color: "#eee" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "8px",
+          marginBottom: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          onClick={() => setShowAddModal(true)}
+          style={{
+            padding: "8px 16px",
+            background: "#333",
+            color: "#fff",
+            border: "1px solid #555",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "0.9rem",
+          }}
+        >
+          + Add Item
+        </button>
+
+        <div
+          style={{
+            flex: "1 1 auto",
+            textAlign: "center",
+            fontSize: "0.8rem",
+            color: "#aaa",
+          }}
+        >
+          {sortedItems.length} of {totalItems} items
+        </div>
+
+        <select
+          value={viewMode}
+          onChange={(e) => setViewMode(e.target.value)}
+          style={{
+            padding: "6px 10px",
+            background: "#333",
+            color: "#fff",
+            border: "1px solid #555",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          <option value="table">Table View</option>
+          <option value="card">Card View</option>
+        </select>
+      </div>
+
+      <input
+        type="text"
+        placeholder="Search by name, category, or location..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "8px",
+          background: "#1e1e1e",
+          color: "#fff",
+          border: "1px solid #333",
+          borderRadius: "6px",
+          marginBottom: "10px",
+        }}
+      />
+
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          style={{
+            flex: "1 1 140px",
+            padding: "6px 8px",
+            background: "#1e1e1e",
+            color: "#fff",
+            border: "1px solid #333",
+            borderRadius: "6px",
+          }}
+        >
+          <option value="any">All categories</option>
+          {categoryOptions.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+
+        <select
+          value={locationFilter}
+          onChange={(e) => setLocationFilter(e.target.value)}
+          style={{
+            flex: "1 1 140px",
+            padding: "6px 8px",
+            background: "#1e1e1e",
+            color: "#fff",
+            border: "1px solid #333",
+            borderRadius: "6px",
+          }}
+        >
+          <option value="any">All locations</option>
+          {locationOptions.map((loc) => (
+            <option key={loc} value={loc}>{loc}</option>
+          ))}
+        </select>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: "16px",
+        }}
+      >
+        <span style={{ color: "#ccc", fontSize: "0.8rem" }}>Sort by:</span>
+
+        <select
+          value={sortField}
+          onChange={(e) => setSortField(e.target.value)}
+          style={{
+            background: "#333",
+            color: "#fff",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            padding: "4px 8px",
+          }}
+        >
+          <option value="item">Item</option>
+          <option value="category">Category</option>
+          <option value="location">Storage Location</option>
+        </select>
+
+        <button
+          onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+          style={{
+            background: "#333",
+            color: "#fff",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            padding: "4px 8px",
+            cursor: "pointer",
+          }}
+        >
+          {sortDirection === "asc" ? "↑" : "↓"}
+        </button>
+
+        <label style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ccc" }}>
+          <input
+            type="checkbox"
+            checked={alertsFirst}
+            onChange={(e) => setAlertsFirst(e.target.checked)}
+          />
+          Alerts first
+        </label>
+      </div>
+      {viewMode === "card" && (
+        <div>
+          {sortedItems.map((item) => {
+            const status = getAlertStatus(item, today, oneWeekFromNow);
+
+            return (
+              <InventoryCard
+                key={item.$id}
+                item={item}
+                categoryName={categories[item.categoryId]}
+                subcategoryName={subcategories[item.subcategoryId]?.name}
+                formatDate={formatDate}
+                getAlertBadge={() => getAlertBadge(status)}
+                onEdit={openEditModal}
+                onDelete={async (fresh) => {
+                  const ok = await deleteItem(fresh.$id);
+                  if (ok) setRefreshKey((k) => k + 1);
+                }}
+                onIncrease={async (fresh) => {
+                  const ok = await increaseQty(fresh);
+                  if (ok) setRefreshKey((k) => k + 1);
+                }}
+                onDecrease={async (fresh) => {
+                  const ok = await decreaseQty(fresh);
+                  if (ok) setRefreshKey((k) => k + 1);
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {showAddModal && (
+        <InventoryAddForm
+          onClose={() => setShowAddModal(false)}
+          onCreated={() => {
+            setShowAddModal(false);
+            setRefreshKey((k) => k + 1);
+          }}
+          selectedHouse={selectedHouse}
+        />
+      )}
+
+      {showEditModal && editItem && (
+        <InventoryEditForm
+          item={editItem}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditItem(null);
+          }}
+          onUpdated={() => {
+            setShowEditModal(false);
+            setEditItem(null);
+            setRefreshKey((k) => k + 1);
+          }}
+          selectedHouse={selectedHouse}
+        />
+      )}
+
+      <div
+        style={{
+          marginTop: "20px",
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          onClick={() => setPage((p) => Math.max(0, p - 1))}
+          disabled={page === 0}
+          style={{
+            padding: "8px 12px",
+            background: page === 0 ? "#333" : "#444",
+            color: "#fff",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            cursor: page === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          Previous
+        </button>
+
+        <span style={{ color: "#ccc", fontSize: "0.9rem" }}>
+          Page {page + 1} of {Math.max(1, Math.ceil(totalItems / PAGE_SIZE))}
+        </span>
+
+        <button
+          onClick={() => setPage((p) => p + 1)}
+          disabled={(page + 1) * PAGE_SIZE >= totalItems}
+          style={{
+            padding: "8px 12px",
+            background:
+              (page + 1) * PAGE_SIZE >= totalItems ? "#333" : "#444",
+            color: "#fff",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            cursor:
+              (page + 1) * PAGE_SIZE >= totalItems
+                ? "not-allowed"
+                : "pointer",
+          }}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const th = {
+  border: "1px solid #444",
+  padding: "8px",
+  background: "#222",
+  color: "#ccc",
+  textAlign: "left",
+};

@@ -21,13 +21,25 @@ export default function InventoryCard({
         </div>
 
         <div style={qtyControls}>
-          <button style={qtyBtn} onClick={() => onDecrease(item)}>-</button>
+          <button
+            style={qtyBtn}
+            onClick={() => onDecrease(item)}
+            title="Decrease quantity"
+          >
+            -
+          </button>
 
           <div style={qtyBox}>
             <strong>{item.quantity}</strong> {item.Unit}
           </div>
 
-          <button style={qtyBtn} onClick={() => onIncrease(item)}>+</button>
+          <button
+            style={qtyBtn}
+            onClick={() => onIncrease(item)}
+            title="Increase quantity"
+          >
+            +
+          </button>
         </div>
       </div>
 
@@ -58,8 +70,12 @@ export default function InventoryCard({
 
       {/* Buttons */}
       <div style={buttonRow}>
-        <button onClick={() => onEdit(item)} style={editBtn}>Edit</button>
-        <button onClick={() => onDelete(item.$id)} style={deleteBtn}>Delete</button>
+        <button onClick={() => onEdit(item)} style={editBtn}>
+          Edit
+        </button>
+        <button onClick={() => onDelete(item)} style={deleteBtn}>
+          Delete
+        </button>
       </div>
     </div>
   );
@@ -81,11 +97,13 @@ const headerRow = {
   justifyContent: "space-between",
   alignItems: "center",
   marginBottom: "10px",
+  gap: "8px",
 };
 
 const itemName = {
-  fontSize: "1.1rem",
+  fontSize: "1.05rem",
   fontWeight: "bold",
+  flex: "1 1 auto",
 };
 
 const qtyControls = {

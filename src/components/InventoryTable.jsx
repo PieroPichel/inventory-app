@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import useCategoryData from "../utils/useCategoryData";
 import useInventoryItems from "../utils/useInventoryItems";
 import ReceiptScanner from "./ReceiptScanner";
@@ -7,7 +7,6 @@ import {
   getDateBounds,
   getAlertStatus,
   getAlertBadge,
-  sortItems,
 } from "./alertUtils";
 
 import {
@@ -41,13 +40,16 @@ export default function InventoryTable({
   const { categories, subcategories } = useCategoryData();
 
   // ------------------------------------------------------------
-  // ITEMS + PAGINATION
+  // ITEMS + PAGINATION + REFRESH
   // ------------------------------------------------------------
   const [page, setPage] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const { items, totalItems } = useInventoryItems(
     selectedHouse,
     page,
-    PAGE_SIZE
+    PAGE_SIZE,
+    refreshKey
   );
 
   // ------------------------------------------------------------
@@ -58,13 +60,13 @@ export default function InventoryTable({
       onExportRequest.current = () =>
         exportItemsCSV(items, categories, subcategories);
     }
-  }, [items, categories, subcategories]);
+  }, [items, categories, subcategories, onExportRequest]);
 
   useEffect(() => {
     if (onAdminExportRequest) {
       onAdminExportRequest.current = () => exportAdminCSV();
     }
-  }, []);
+  }, [onAdminExportRequest]);
 
   // ------------------------------------------------------------
   // VIEW MODE
@@ -105,13 +107,185 @@ export default function InventoryTable({
   ];
 
   // ------------------------------------------------------------
-  // ALERT + SORTING
+  // ALERT
   // ------------------------------------------------------------
   const { today, oneWeekFromNow } = getDateBounds();
-  const sortedItems = sortItems(items, today, oneWeekFromNow);
 
   // ------------------------------------------------------------
-  // Scanner useState hook
+  // SEARCH + FILTERS
+  // ------------------------------------------------------------
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("any");
+  const [locationFilter, setLocationFilter] = useState("any");
+
+  const normalizeLocation = (s) => (s || "").trim().toLowerCase();
+
+  // Base filter for computing dynamic options (search + other filter)
+  const baseFilteredForCategory = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return (items || []).filter((item) => {
+      const name = (item.Item || "").toLowerCase();
+      const catName = (categories[item.categoryId] || "").toLowerCase();
+      const loc = (item.storage_location || "").toLowerCase();
+
+      if (term) {
+        const matches =
+          name.includes(term) ||
+          catName.includes(term) ||
+          loc.includes(term);
+        if (!matches) return false;
+      }
+
+      if (locationFilter !== "any") {
+        const itemLoc = item.storage_location || "";
+        if (!itemLoc) return false;
+        if (
+          normalizeLocation(itemLoc) !==
+          normalizeLocation(locationFilter)
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [items, categories, searchTerm, locationFilter]);
+
+  const baseFilteredForLocation = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return (items || []).filter((item) => {
+      const name = (item.Item || "").toLowerCase();
+      const catName = (categories[item.categoryId] || "").toLowerCase();
+      const loc = (item.storage_location || "").toLowerCase();
+
+      if (term) {
+        const matches =
+          name.includes(term) ||
+          catName.includes(term) ||
+          loc.includes(term);
+        if (!matches) return false;
+      }
+
+      if (categoryFilter !== "any") {
+        const itemCat = categories[item.categoryId] || "";
+        if (itemCat !== categoryFilter) return false;
+      }
+
+      return true;
+    });
+  }, [items, categories, searchTerm, categoryFilter]);
+
+  // Dynamic category options based on current search + location filter
+  const categoryOptions = useMemo(() => {
+    const names = new Set();
+    baseFilteredForCategory.forEach((item) => {
+      const name = categories[item.categoryId];
+      if (name) names.add(name);
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [baseFilteredForCategory, categories]);
+
+  // Dynamic location options based on current search + category filter
+  const locationOptions = useMemo(() => {
+    const locMap = new Map();
+    baseFilteredForLocation.forEach((item) => {
+      const raw = item.storage_location || "";
+      const trimmed = raw.trim();
+      if (!trimmed) return;
+      const norm = normalizeLocation(trimmed);
+      if (!locMap.has(norm)) {
+        locMap.set(norm, trimmed);
+      }
+    });
+    return Array.from(locMap.values()).sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }, [baseFilteredForLocation]);
+
+  // ------------------------------------------------------------
+  // SORTING + FINAL FILTER
+  // ------------------------------------------------------------
+  const [sortField, setSortField] = useState("name"); // "name" | "category" | "location"
+  const [sortDirection, setSortDirection] = useState("asc"); // "asc" | "desc"
+
+  const filteredAndSortedItems = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    const filtered = (items || []).filter((item) => {
+      const name = (item.Item || "").toLowerCase();
+      const catName = (categories[item.categoryId] || "").toLowerCase();
+      const loc = (item.storage_location || "").toLowerCase();
+
+      if (term) {
+        const matches =
+          name.includes(term) ||
+          catName.includes(term) ||
+          loc.includes(term);
+        if (!matches) return false;
+      }
+
+      if (categoryFilter !== "any") {
+        const itemCat = categories[item.categoryId] || "";
+        if (itemCat !== categoryFilter) return false;
+      }
+
+      if (locationFilter !== "any") {
+        const itemLoc = item.storage_location || "";
+        if (!itemLoc) return false;
+        if (
+          normalizeLocation(itemLoc) !==
+          normalizeLocation(locationFilter)
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      let aVal = "";
+      let bVal = "";
+
+      if (sortField === "name") {
+        aVal = (a.Item || "").toLowerCase();
+        bVal = (b.Item || "").toLowerCase();
+      } else if (sortField === "category") {
+        const aCat = categories[a.categoryId] || "";
+        const bCat = categories[b.categoryId] || "";
+        aVal = (aCat || "").toLowerCase();
+        bVal = (bCat || "").toLowerCase();
+      } else if (sortField === "location") {
+        const aLoc = a.storage_location || "";
+        const bLoc = b.storage_location || "";
+        aVal = aLoc.toLowerCase();
+        bVal = bLoc.toLowerCase();
+
+        // Empty values last
+        const aEmpty = aLoc.trim() === "";
+        const bEmpty = bLoc.trim() === "";
+        if (aEmpty && !bEmpty) return 1;
+        if (!aEmpty && bEmpty) return -1;
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [
+    items,
+    categories,
+    searchTerm,
+    categoryFilter,
+    locationFilter,
+    sortField,
+    sortDirection,
+  ]);
+
+  // ------------------------------------------------------------
+  // Scanner
   // ------------------------------------------------------------
   const [showScanner, setShowScanner] = useState(false);
 
@@ -135,6 +309,17 @@ export default function InventoryTable({
   };
 
   // ------------------------------------------------------------
+  // SORT HANDLERS
+  // ------------------------------------------------------------
+  const handleSortFieldChange = (e) => {
+    setSortField(e.target.value);
+  };
+
+  const handleSortDirectionToggle = () => {
+    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  // ------------------------------------------------------------
   // NO HOUSE SELECTED
   // ------------------------------------------------------------
   if (!selectedHouse) {
@@ -144,6 +329,7 @@ export default function InventoryTable({
       </div>
     );
   }
+
   return (
     <div
       style={{
@@ -153,60 +339,200 @@ export default function InventoryTable({
         color: "#eee",
       }}
     >
-      {/* HEADER */}
+      {/* TOP ROW: Add | count | view mode */}
       <div
         style={{
           display: "flex",
+          alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: "20px",
+          gap: "8px",
+          marginBottom: "12px",
+          flexWrap: "wrap",
         }}
       >
-        <h3 style={{ color: "#aaa" }}>
-          Showing {items.length} of {totalItems} items (page {page + 1} of{" "}
-          {Math.max(1, Math.ceil(totalItems / PAGE_SIZE))})
-        </h3>
+        <button
+          onClick={() => setShowAddModal(true)}
+          style={{
+            padding: "8px 16px",
+            background: "#333",
+            color: "#fff",
+            border: "1px solid #555",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "0.9rem",
+          }}
+        >
+          + Add Item
+        </button>
 
-        <ViewModeSelector viewMode={viewMode} setViewMode={setViewMode} />
+        <div
+          style={{
+            flex: "1 1 auto",
+            textAlign: "center",
+            fontSize: "0.8rem",
+            color: "#aaa",
+          }}
+        >
+          {filteredAndSortedItems.length} of {totalItems} items
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <ViewModeSelector viewMode={viewMode} setViewMode={setViewMode} />
+        </div>
       </div>
 
-      {/* ADD BUTTON */}
-      <button
-        onClick={() => setShowAddModal(true)}
+      {/* FILTER + SORT BAR */}
+      <div
         style={{
-          padding: "10px 20px",
-          marginBottom: "20px",
-          background: "#333",
-          color: "#fff",
-          border: "1px solid #555",
-          borderRadius: "6px",
-          cursor: "pointer",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          marginBottom: "16px",
         }}
       >
-        + Add Item
-      </button>
-      
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="Search by name, category, or location..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "8px",
+            background: "#1e1e1e",
+            color: "#fff",
+            border: "1px solid #333",
+            borderRadius: "6px",
+            fontSize: "0.9rem",
+          }}
+        />
 
-  {/*
-  <button
-    onClick={() => setShowScanner(true)}
-    style={{
-      padding: "10px 20px",
-      marginBottom: "20px",
-      background: "#333",
-      color: "#fff",
-      border: "1px solid #555",
-      borderRadius: "6px",
-      cursor: "pointer",
-    }}
-  >
-    📸 Scan Receipt
-  </button>
-*/}
+        {/* Category + Location */}
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            flexWrap: "wrap",
+          }}
+        >
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            style={{
+              flex: "1 1 140px",
+              minWidth: "0",
+              padding: "6px 8px",
+              background: "#1e1e1e",
+              color: "#fff",
+              border: "1px solid #333",
+              borderRadius: "6px",
+              fontSize: "0.85rem",
+            }}
+          >
+            <option value="any">All categories</option>
+            {categoryOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            style={{
+              flex: "1 1 140px",
+              minWidth: "0",
+              padding: "6px 8px",
+              background: "#1e1e1e",
+              color: "#fff",
+              border: "1px solid #333",
+              borderRadius: "6px",
+              fontSize: "0.85rem",
+            }}
+          >
+            <option value="any">All locations</option>
+            {locationOptions.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Sort controls */}
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: "6px",
+              alignItems: "center",
+              background: "#1e1e1e",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              border: "1px solid #333",
+              flex: "1 1 auto",
+            }}
+          >
+            <span
+              style={{
+                color: "#ccc",
+                fontSize: "0.8rem",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Sort by:
+            </span>
+            <select
+              value={sortField}
+              onChange={handleSortFieldChange}
+              style={{
+                background: "#333",
+                color: "#fff",
+                border: "1px solid #555",
+                borderRadius: "4px",
+                padding: "4px 8px",
+                fontSize: "0.85rem",
+                flex: "1 1 auto",
+              }}
+            >
+              <option value="name">Name</option>
+              <option value="category">Category</option>
+              <option value="location">Storage Location</option>
+            </select>
+            <button
+              onClick={handleSortDirectionToggle}
+              style={{
+                background: "#333",
+                color: "#fff",
+                border: "1px solid #555",
+                borderRadius: "4px",
+                padding: "4px 8px",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+              }}
+              title={
+                sortDirection === "asc"
+                  ? "Ascending (click to switch to descending)"
+                  : "Descending (click to switch to ascending)"
+              }
+            >
+              {sortDirection === "asc" ? "↑" : "↓"}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {showScanner && (
         <ReceiptScanner onClose={() => setShowScanner(false)} />
       )}
-
 
       {/* ADD FORM */}
       {showAddModal && (
@@ -220,7 +546,7 @@ export default function InventoryTable({
           onCreated={() => {
             setShowAddModal(false);
             setNewItem({ ...emptyItem });
-            setPage(0);
+            setRefreshKey((k) => k + 1); // reload after add
           }}
           errorMessage={errorMessage}
           setErrorMessage={setErrorMessage}
@@ -244,6 +570,7 @@ export default function InventoryTable({
           onUpdated={() => {
             setShowEditModal(false);
             setEditItem(null);
+            setRefreshKey((k) => k + 1); // reload after edit
           }}
           errorMessage={errorMessage}
           setErrorMessage={setErrorMessage}
@@ -281,7 +608,7 @@ export default function InventoryTable({
             </thead>
 
             <tbody>
-              {sortedItems.map((item) => {
+              {filteredAndSortedItems.map((item) => {
                 const status = getAlertStatus(item, today, oneWeekFromNow);
 
                 return (
@@ -298,9 +625,17 @@ export default function InventoryTable({
                       fontWeight: status ? "bold" : "normal",
                     })}
                     onEdit={openEditModal}
-                    onDelete={async () => {
-                      const ok = await deleteItem(item.$id);
-                      if (ok) setPage((p) => p); // triggers reload via hook
+                    onDelete={async (fresh) => {
+                      const ok = await deleteItem(fresh.$id);
+                      if (ok) setRefreshKey((k) => k + 1);
+                    }}
+                    onIncrease={async (fresh) => {
+                      const ok = await increaseQty(fresh);
+                      if (ok) setRefreshKey((k) => k + 1);
+                    }}
+                    onDecrease={async (fresh) => {
+                      const ok = await decreaseQty(fresh);
+                      if (ok) setRefreshKey((k) => k + 1);
                     }}
                   />
                 );
@@ -313,7 +648,7 @@ export default function InventoryTable({
       {/* CARD VIEW */}
       {viewMode === "card" && (
         <div>
-          {sortedItems.map((item) => {
+          {filteredAndSortedItems.map((item) => {
             const status = getAlertStatus(item, today, oneWeekFromNow);
 
             return (
@@ -325,23 +660,24 @@ export default function InventoryTable({
                 formatDate={formatDate}
                 getAlertBadge={() => getAlertBadge(status)}
                 onEdit={openEditModal}
-                onDelete={async () => {
-                  const ok = await deleteItem(item.$id);
-                  if (ok) setPage((p) => p);
+                onDelete={async (fresh) => {
+                  const ok = await deleteItem(fresh.$id);
+                  if (ok) setRefreshKey((k) => k + 1);
                 }}
-                onIncrease={async () => {
-                  const ok = await increaseQty(item);
-                  if (ok) setPage((p) => p);
+                onIncrease={async (fresh) => {
+                  const ok = await increaseQty(fresh);
+                  if (ok) setRefreshKey((k) => k + 1);
                 }}
-                onDecrease={async () => {
-                  const ok = await decreaseQty(item);
-                  if (ok) setPage((p) => p);
+                onDecrease={async (fresh) => {
+                  const ok = await decreaseQty(fresh);
+                  if (ok) setRefreshKey((k) => k + 1);
                 }}
               />
             );
           })}
         </div>
       )}
+
       {/* PAGINATION */}
       <div
         style={{
@@ -349,6 +685,7 @@ export default function InventoryTable({
           display: "flex",
           gap: "10px",
           alignItems: "center",
+          flexWrap: "wrap",
         }}
       >
         <button
@@ -366,7 +703,7 @@ export default function InventoryTable({
           Previous
         </button>
 
-        <span style={{ color: "#ccc" }}>
+        <span style={{ color: "#ccc", fontSize: "0.9rem" }}>
           Page {page + 1} of {Math.max(1, Math.ceil(totalItems / PAGE_SIZE))}
         </span>
 

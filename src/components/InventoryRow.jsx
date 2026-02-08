@@ -9,6 +9,8 @@ export default function InventoryRow({
   getRowStyle,
   onEdit,
   onDelete,
+  onIncrease,
+  onDecrease,
 }) {
   return (
     <tr style={getRowStyle(item)}>
@@ -28,13 +30,35 @@ export default function InventoryRow({
       <td style={td}>{formatDate(item["expiry_date"])}</td>
 
       <td style={td}>
-        <button onClick={() => onEdit(item)} style={editBtn}>
-          Edit
-        </button>
+        <div style={actionContainer}>
+          <div style={qtyGroup}>
+            <button
+              onClick={() => onDecrease(item)}
+              style={qtyBtn}
+              title="Decrease quantity"
+            >
+              -
+            </button>
+            <span style={qtyText}>{item.quantity}</span>
+            <button
+              onClick={() => onIncrease(item)}
+              style={qtyBtn}
+              title="Increase quantity"
+            >
+              +
+            </button>
+          </div>
 
-        <button onClick={() => onDelete(item.$id)} style={deleteBtn}>
-          Delete
-        </button>
+          <div style={editDeleteGroup}>
+            <button onClick={() => onEdit(item)} style={editBtn}>
+              Edit
+            </button>
+
+            <button onClick={() => onDelete(item)} style={deleteBtn}>
+              Delete
+            </button>
+          </div>
+        </div>
       </td>
     </tr>
   );
@@ -45,6 +69,41 @@ export default function InventoryRow({
 const td = {
   border: "1px solid #333",
   padding: "8px",
+  verticalAlign: "middle",
+};
+
+const actionContainer = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+};
+
+const qtyGroup = {
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
+};
+
+const qtyBtn = {
+  background: "#444",
+  color: "#fff",
+  border: "none",
+  padding: "4px 8px",
+  borderRadius: "4px",
+  cursor: "pointer",
+  fontSize: "0.9rem",
+};
+
+const qtyText = {
+  minWidth: "24px",
+  textAlign: "center",
+  fontSize: "0.9rem",
+};
+
+const editDeleteGroup = {
+  display: "flex",
+  gap: "6px",
+  marginTop: "4px",
 };
 
 const editBtn = {
@@ -54,7 +113,6 @@ const editBtn = {
   padding: "6px 10px",
   borderRadius: "4px",
   cursor: "pointer",
-  marginRight: "6px",
 };
 
 const deleteBtn = {

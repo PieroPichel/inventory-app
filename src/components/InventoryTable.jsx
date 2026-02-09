@@ -33,7 +33,7 @@ export default function InventoryTable({
   onAdminExportRequest,
 }) {
   const PAGE_SIZE = 100;
-
+  
   // ------------------------------------------------------------
   // CATEGORY + SUBCATEGORY DATA
   // ------------------------------------------------------------
@@ -603,6 +603,7 @@ export default function InventoryTable({
                 <th style={th}>Unit</th>
                 <th style={th}>Location</th>
                 <th style={th}>Expiry</th>
+                <th style={th}>Stores</th>
                 <th style={th}>Actions</th>
               </tr>
             </thead>
@@ -618,6 +619,7 @@ export default function InventoryTable({
                     categoryName={categories[item.categoryId]}
                     subcategoryName={subcategories[item.subcategoryId]?.name}
                     formatDate={formatDate}
+//                    allStores={allStores}
                     getAlertBadge={() => getAlertBadge(status)}
                     getRowStyle={() => ({
                       background: "#121212",

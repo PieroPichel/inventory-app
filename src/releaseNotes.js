@@ -1,5 +1,12 @@
 export const RELEASE_NOTES = [
   {
+    version: "1.1.0",
+    date: "2026-02-09",
+    notes: [
+      "Major release - Store capability added + layout review",
+      "Changes in DB, Table view, Card view, Add Items, Edit Items"
+    ]
+  },  {
     version: "1.0.8",
     date: "2026-02-03",
     notes: [

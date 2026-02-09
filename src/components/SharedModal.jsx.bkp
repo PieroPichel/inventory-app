@@ -31,7 +31,7 @@ const box = {
   background: "#1e1e1e",
   padding: "20px",
   borderRadius: "8px",
-  width: "100%",
+  width: "90%",
   maxWidth: "400px",
 };
 

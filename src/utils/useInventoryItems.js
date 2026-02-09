@@ -13,25 +13,27 @@ export default function useInventoryItems(selectedHouse, page, pageSize, refresh
   const [items, setItems] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
-    if (!selectedHouse) {
-      setItems([]);
-      setTotalItems(0);
-      return;
-    }
+useEffect(() => {
+  if (!selectedHouse) {
+    setItems([]);
+    setTotalItems(0);
+    return;
+  }
 
-    databases
-      .listDocuments(DB_ID, COLLECTION_ID, [
-        Query.equal("houseId", selectedHouse),
-        Query.limit(pageSize),
-        Query.offset(page * pageSize),
-      ])
-      .then((res) => {
-        setItems(res.documents);
-        setTotalItems(res.total);
-      })
-      .catch((err) => console.error("Error loading items:", err));
-  }, [selectedHouse, page, pageSize, refreshKey]);
+  databases
+    .listDocuments(DB_ID, COLLECTION_ID, [
+      Query.equal("houseId", selectedHouse),
+      Query.limit(pageSize),
+      Query.offset(page * pageSize),
+    ])
+    .then((res) => {
+      console.log("Inventory items raw from Appwrite:", res.documents[0]);
+      setItems(res.documents);
+      setTotalItems(res.total);
+    })
+    .catch((err) => console.error("Error loading items:", err));
+}, [selectedHouse, page, pageSize, refreshKey]);
+
 
   return { items, totalItems };
 }

@@ -100,6 +100,15 @@ export default function InventoryCard({
       </div>
 
       <div style={infoRow}>
+        <span style={label}>Cart:</span>
+		 {item.cart_mode === "manual"
+		 ? "🛒 - Manual"
+		 : item.cart_mode === "auto"
+		 ? "🛒 - Auto"
+		 : "—"}
+      </div>
+
+      <div style={infoRow}>
         <span style={label}>Stores:</span>
         {storePills}
       </div>

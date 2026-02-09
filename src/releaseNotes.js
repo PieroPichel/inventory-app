@@ -1,5 +1,13 @@
 export const RELEASE_NOTES = [
   {
+    version: "1.1.1",
+    date: "2026-02-09",
+    notes: [
+      "Added 'Cart' Information in Table/Card view",
+      "Added 'In Cart Only' filter"
+    ]
+  },
+  {
     version: "1.1.0",
     date: "2026-02-09",
     notes: [

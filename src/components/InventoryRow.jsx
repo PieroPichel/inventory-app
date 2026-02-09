@@ -61,6 +61,26 @@ export default function InventoryRow({
       <td style={td}>{item.storage_location}</td>
       <td style={td}>{formatDate(item.expiry_date)}</td>
 
+      {/* CART MODE */}
+      <td style={td}>
+        {item.cart_mode === "manual" ? (
+          <>
+            🛒
+            <br />
+            Manual
+          </>
+        ) : item.cart_mode === "auto" ? (
+          <>
+            🛒
+            <br />
+            Auto
+          </>
+        ) : (
+          "—"
+        )}
+      </td>
+
+
       {/* STORES COLUMN */}
       <td style={td}>{storePills}</td>
 

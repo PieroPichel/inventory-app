@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// alertUtils.jsx !
+// alertUtils.jsx
 // Handles alert status, alert badges, and item sorting
 // ------------------------------------------------------------
 
@@ -19,9 +19,21 @@ export function getAlertStatus(item, today, oneWeekFromNow) {
   const minStock = Number(item.Min_Stock ?? 0);
   const expiry = item.expiry_date ? new Date(item.expiry_date) : null;
 
-  if (!isNaN(quantity) && !isNaN(minStock) && quantity < minStock) return "low";
-  if (expiry && expiry < today) return "expired";
-  if (expiry && expiry >= today && expiry <= oneWeekFromNow) return "soon";
+  // 1. LOW STOCK always takes priority when qty < min
+  if (!isNaN(quantity) && !isNaN(minStock) && quantity < minStock) {
+    return "low";
+  }
+
+  // 2. If quantity is zero AND minStock is zero → no alert
+  if (quantity === 0 && minStock === 0) {
+    return null;
+  }
+
+  // 3. Expiry-based alerts only apply when quantity > 0
+  if (quantity > 0) {
+    if (expiry && expiry < today) return "expired";
+    if (expiry && expiry >= today && expiry <= oneWeekFromNow) return "soon";
+  }
 
   return null;
 }

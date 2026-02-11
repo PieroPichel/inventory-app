@@ -1,5 +1,7 @@
 // components/InventoryCard.jsx
 
+import CartButtonSwitch from "./CartButtonSwitch";
+
 export default function InventoryCard({
   item,
   categoryName,
@@ -10,6 +12,9 @@ export default function InventoryCard({
   onDelete,
   onIncrease,
   onDecrease,
+  onIncreaseMin,
+  onDecreaseMin,
+  onCartModeChange,
 }) {
   // Normalize relation objects
   const stores = Array.isArray(item.stores)
@@ -46,6 +51,7 @@ export default function InventoryCard({
 
   return (
     <div style={card}>
+      {/* HEADER: NAME + QTY CONTROLS */}
       <div style={headerRow}>
         <div style={itemName}>
           {item.Item}
@@ -75,6 +81,7 @@ export default function InventoryCard({
         </div>
       </div>
 
+      {/* INFO FIELDS */}
       <div style={infoRow}>
         <span style={label}>Category:</span> {categoryName || "—"}
       </div>
@@ -87,8 +94,28 @@ export default function InventoryCard({
         <span style={label}>Life:</span> {item.life}
       </div>
 
+      {/* MIN STOCK WITH CONTROLS */}
       <div style={infoRow}>
-        <span style={label}>Min Stock:</span> {item.Min_Stock}
+        <span style={label}>Min Stock:</span>
+        <div style={minControls}>
+          <button
+            style={minBtn}
+            onClick={() => onDecreaseMin(item)}
+            title="Decrease minimum stock"
+          >
+            -
+          </button>
+
+          <span style={minValue}>{item.Min_Stock}</span>
+
+          <button
+            style={minBtn}
+            onClick={() => onIncreaseMin(item)}
+            title="Increase minimum stock"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       <div style={infoRow}>
@@ -99,27 +126,28 @@ export default function InventoryCard({
         <span style={label}>Expiry:</span> {formatDate(item.expiry_date)}
       </div>
 
-      <div style={infoRow}>
-        <span style={label}>Cart:</span>
-		 {item.cart_mode === "manual"
-		 ? "🛒 - Manual"
-		 : item.cart_mode === "auto"
-		 ? "🛒 - Auto"
-		 : "—"}
-      </div>
+      {/* REMOVED CART TEXT ROW */}
 
       <div style={infoRow}>
         <span style={label}>Stores:</span>
         {storePills}
       </div>
 
+      {/* BUTTONS + CART SWITCH */}
       <div style={buttonRow}>
+        <CartButtonSwitch
+          value={item.cart_mode}
+          onChange={(mode) => onCartModeChange(item, mode)}
+         />
+          
         <button onClick={() => onEdit(item)} style={editBtn}>
           Edit
         </button>
+
         <button onClick={() => onDelete(item)} style={deleteBtn}>
           Delete
         </button>
+        
       </div>
     </div>
   );
@@ -201,6 +229,35 @@ const buttonRow = {
   justifyContent: "flex-end",
   gap: "10px",
   marginTop: "12px",
+  alignItems: "center",
+};
+
+/* MIN CONTROLS */
+const minControls = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+  marginLeft: "4px",
+};
+
+const minBtn = {
+  background: "#444",
+  color: "#fff",
+  border: "1px solid #666",
+  width: "24px",
+  height: "24px",
+  borderRadius: "6px",
+  cursor: "pointer",
+  fontSize: "0.9rem",
+  lineHeight: "0.9rem",
+  textAlign: "center",
+  padding: 0,
+};
+
+const minValue = {
+  minWidth: "28px",
+  textAlign: "center",
+  fontSize: "0.9rem",
 };
 
 const editBtn = {

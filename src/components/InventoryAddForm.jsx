@@ -2,6 +2,7 @@ import SharedModal from "./SharedModal";
 import { databases, ID } from "../appwrite";
 import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
+import CartButtonSwitch from "./CartButtonSwitch";
 import { useEffect, useState } from "react";
 
 const DB_ID = "697dcef40009d64e2fe1";
@@ -87,14 +88,12 @@ export default function InventoryAddForm({
       alert("Add failed — check Appwrite permissions.");
     }
   };
-
   return (
     <SharedModal title="Add New Item" onCancel={onClose}>
       {errorMessage && <div style={errBox}>{errorMessage}</div>}
 
       {/* Two-column grid */}
       <div style={grid2}>
-
         <div style={field}>
           <label>Item *</label>
           <input
@@ -118,12 +117,10 @@ export default function InventoryAddForm({
             style={input}
           />
         </div>
-
       </div>
 
-      {/* Three-column grid for Qty / Min / Unit */}
+      {/* Three-column grid */}
       <div style={grid3}>
-
         <div style={fieldSmall}>
           <label>Qty *</label>
           <input
@@ -153,12 +150,10 @@ export default function InventoryAddForm({
             style={input}
           />
         </div>
-
       </div>
 
       {/* Two-column grid */}
       <div style={grid2}>
-
         <div style={field}>
           <label>Category *</label>
           <CategorySelect
@@ -204,12 +199,20 @@ export default function InventoryAddForm({
             style={input}
           />
         </div>
-
       </div>
 
-      {/* Stores */}
+      {/* ------------------------------------------------------------
+          STORES + CART SWITCH INLINE (Option C)
+      ------------------------------------------------------------ */}
       <div style={fullRow}>
-        <label>Stores (ordered by preference):</label>
+        <div style={storesHeaderRow}>
+          <label>Stores (ordered by preference):</label>
+
+          <CartButtonSwitch
+            value={item.cart_mode}
+            onChange={(mode) => setItem({ ...item, cart_mode: mode })}
+          />
+        </div>
 
         <div
           style={tagBox}
@@ -261,7 +264,6 @@ export default function InventoryAddForm({
           </div>
         )}
       </div>
-
       {/* Notes */}
       <div style={fullRow}>
         <label>Notes</label>
@@ -316,6 +318,12 @@ const fullRow = {
   display: "flex",
   flexDirection: "column",
   gap: "4px",
+};
+
+const storesHeaderRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
 };
 
 const input = {

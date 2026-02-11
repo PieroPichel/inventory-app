@@ -2,6 +2,7 @@ import SharedModal from "./SharedModal";
 import { databases } from "../appwrite";
 import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
+import CartButtonSwitch from "./CartButtonSwitch";
 import { useEffect, useState } from "react";
 
 const DB_ID = "697dcef40009d64e2fe1";
@@ -90,14 +91,12 @@ export default function InventoryEditForm({
       alert("Edit failed — check Appwrite permissions.");
     }
   };
-
   return (
     <SharedModal title="Edit Item" onCancel={onClose}>
       {errorMessage && <div style={errBox}>{errorMessage}</div>}
 
       {/* Two-column grid */}
       <div style={grid2}>
-
         <div style={field}>
           <label>Item *:</label>
           <input
@@ -121,12 +120,10 @@ export default function InventoryEditForm({
             style={input}
           />
         </div>
-
       </div>
 
-      {/* Three-column grid for Qty / Min / Unit */}
+      {/* Three-column grid */}
       <div style={grid3}>
-
         <div style={fieldSmall}>
           <label>Qty *:</label>
           <input
@@ -156,12 +153,10 @@ export default function InventoryEditForm({
             style={input}
           />
         </div>
-
       </div>
 
       {/* Two-column grid */}
       <div style={grid2}>
-
         <div style={field}>
           <label>Category *:</label>
           <CategorySelect
@@ -207,12 +202,20 @@ export default function InventoryEditForm({
             style={input}
           />
         </div>
-
       </div>
 
-      {/* Stores */}
+      {/* ------------------------------------------------------------
+          STORES + CART SWITCH INLINE (Option C)
+      ------------------------------------------------------------ */}
       <div style={fullRow}>
-        <label>Stores (ordered by preference):</label>
+        <div style={storesHeaderRow}>
+          <label>Stores (ordered by preference):</label>
+
+          <CartButtonSwitch
+            value={item.cart_mode}
+            onChange={(mode) => setItem({ ...item, cart_mode: mode })}
+          />
+        </div>
 
         <div
           style={tagBox}
@@ -264,7 +267,6 @@ export default function InventoryEditForm({
           </div>
         )}
       </div>
-
       {/* Notes */}
       <div style={fullRow}>
         <label>Notes:</label>
@@ -311,7 +313,7 @@ const fieldSmall = {
   display: "flex",
   flexDirection: "column",
   gap: "4px",
-  width: "90%"
+  width: "90%",
 };
 
 const fullRow = {
@@ -319,6 +321,12 @@ const fullRow = {
   display: "flex",
   flexDirection: "column",
   gap: "4px",
+};
+
+const storesHeaderRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
 };
 
 const input = {

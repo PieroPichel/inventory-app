@@ -27,7 +27,7 @@ useEffect(() => {
       Query.offset(page * pageSize),
     ])
     .then((res) => {
-      console.log("Inventory items raw from Appwrite:", res.documents[0]);
+      {/* console.log("Inventory items raw from Appwrite:", res.documents[0]); */}
       setItems(res.documents);
       setTotalItems(res.total);
     })

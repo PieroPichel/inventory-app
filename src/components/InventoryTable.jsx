@@ -3,7 +3,7 @@ import useCategoryData from "../utils/useCategoryData";
 import useInventoryItems from "../utils/useInventoryItems";
 import ReceiptScanner from "./ReceiptScanner";
 import { getDateBounds, getAlertStatus, getAlertBadge } from "./alertUtils";
-import { increaseQty, decreaseQty, deleteItem } from "../utils/itemActions";
+import { increaseQty, decreaseQty, deleteItem, updateCartMode, increaseMin, decreaseMin } from "../utils/itemActions";
 import { exportItemsCSV, exportAdminCSV } from "../utils/exportUtils";
 import ViewModeSelector from "./ViewModeSelector";
 import InventoryAddForm from "./InventoryAddForm";
@@ -362,7 +362,7 @@ export default function InventoryTable({
     setSortDirection("asc");
     setPage(0);
   };
-
+  
   useEffect(() => {
     setPage(0);
   }, [searchTerm, categoryFilter, locationFilter, storeFilter, cartOnly]);
@@ -768,6 +768,18 @@ export default function InventoryTable({
                       const ok = await decreaseQty(fresh);
                       if (ok) setRefreshKey((k) => k + 1);
                     }}
+                    onCartModeChange={async (fresh, mode) => {
+                      const ok = await updateCartMode(fresh.$id, mode);
+                      if (ok) setRefreshKey((k) => k + 1);
+                    }}
+                    onIncreaseMin={async (fresh) => {
+                      const ok = await increaseMin(fresh);
+                      if (ok) setRefreshKey((k) => k + 1);
+                    }}
+                    onDecreaseMin={async (fresh) => {
+                      const ok = await decreaseMin(fresh);
+                      if (ok) setRefreshKey((k) => k + 1);
+                    }}
                   />
                 );
               })}
@@ -776,38 +788,54 @@ export default function InventoryTable({
         </div>
       )}
 
-      {/* CARD VIEW */}
-      {viewMode === "card" && (
-        <div>
-          {filteredAndSortedItems.map((item) => {
-            const status = getAlertStatus(item, today, oneWeekFromNow);
+{/* CARD VIEW */}
+{viewMode === "card" && (
+  <div>
+    {filteredAndSortedItems.map((item) => {
+      const status = getAlertStatus(item, today, oneWeekFromNow);
 
-            return (
-              <InventoryCard
-                key={item.$id}
-                item={item}
-                categoryName={categories[item.categoryId]}
-                subcategoryName={subcategories[item.subcategoryId]?.name}
-                formatDate={formatDate}
-                getAlertBadge={() => getAlertBadge(status)}
-                onEdit={openEditModal}
-                onDelete={async (fresh) => {
-                  const ok = await deleteItem(fresh.$id);
-                  if (ok) setRefreshKey((k) => k + 1);
-                }}
-                onIncrease={async (fresh) => {
-                  const ok = await increaseQty(fresh);
-                  if (ok) setRefreshKey((k) => k + 1);
-                }}
-                onDecrease={async (fresh) => {
-                  const ok = await decreaseQty(fresh);
-                  if (ok) setRefreshKey((k) => k + 1);
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
+      return (
+        <InventoryCard
+          key={item.$id}
+          item={item}
+          categoryName={categories[item.categoryId]}
+          subcategoryName={subcategories[item.subcategoryId]?.name}
+          formatDate={formatDate}
+          getAlertBadge={() => getAlertBadge(status)}
+
+          onCartModeChange={async (fresh, mode) => {
+            const ok = await updateCartMode(fresh.$id, mode);
+            if (ok) setRefreshKey((k) => k + 1);
+          }}
+
+          onEdit={openEditModal}
+
+          onDelete={async (fresh) => {
+            const ok = await deleteItem(fresh.$id);
+            if (ok) setRefreshKey((k) => k + 1);
+          }}
+          onIncrease={async (fresh) => {
+            const ok = await increaseQty(fresh);
+            if (ok) setRefreshKey((k) => k + 1);
+          }}
+          onDecrease={async (fresh) => {
+            const ok = await decreaseQty(fresh);
+            if (ok) setRefreshKey((k) => k + 1);
+          }}
+                    onIncreaseMin={async (fresh) => {
+            const ok = await increaseMin(fresh);
+            if (ok) setRefreshKey((k) => k + 1);
+          }}
+          onDecreaseMin={async (fresh) => {
+            const ok = await decreaseMin(fresh);
+            if (ok) setRefreshKey((k) => k + 1);
+          }}
+        />
+      );
+    })}
+  </div>
+)}
+
 
       {/* PAGINATION */}
       <div

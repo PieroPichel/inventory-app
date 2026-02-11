@@ -1,5 +1,7 @@
 // components/InventoryRow.jsx
 
+import CartButtonSwitch from "./CartButtonSwitch";
+
 export default function InventoryRow({
   item,
   categoryName,
@@ -11,6 +13,9 @@ export default function InventoryRow({
   onDelete,
   onIncrease,
   onDecrease,
+  onIncreaseMin,
+  onDecreaseMin,
+  onCartModeChange,
 }) {
   // Appwrite returns full objects for relations
   const stores = Array.isArray(item.stores)
@@ -55,56 +60,68 @@ export default function InventoryRow({
       <td style={td}>{subcategoryName || "—"}</td>
 
       <td style={td}>{item.life}</td>
-      <td style={td}>{item.quantity}</td>
-      <td style={td}>{item.Min_Stock}</td>
+      
+<td style={td}>
+  <div style={qtyGroup}>
+    <button
+      onClick={() => onDecrease(item)}
+      style={qtyBtn}
+      title="Decrease quantity"
+    >
+      -
+    </button>
+
+    <span style={qtyText}>{item.quantity}</span>
+
+    <button
+      onClick={() => onIncrease(item)}
+      style={qtyBtn}
+      title="Increase quantity"
+    >
+      +
+    </button>
+  </div>
+</td>
+
+<td style={td}>
+  <div style={qtyGroup}>
+    <button
+      onClick={() => onDecreaseMin(item)}
+      style={qtyBtn}
+      title="Decrease minimum stock"
+    >
+      -
+    </button>
+
+    <span style={qtyText}>{item.Min_Stock}</span>
+
+    <button
+      onClick={() => onIncreaseMin(item)}
+      style={qtyBtn}
+      title="Increase minimum stock"
+    >
+      +
+    </button>
+  </div>
+</td>
+
       <td style={td}>{item.Unit}</td>
       <td style={td}>{item.storage_location}</td>
       <td style={td}>{formatDate(item.expiry_date)}</td>
 
       {/* CART MODE */}
-      <td style={td}>
-        {item.cart_mode === "manual" ? (
-          <>
-            🛒
-            <br />
-            Manual
-          </>
-        ) : item.cart_mode === "auto" ? (
-          <>
-            🛒
-            <br />
-            Auto
-          </>
-        ) : (
-          "—"
-        )}
-      </td>
-
+<td style={td}>
+  <CartButtonSwitch
+    value={item.cart_mode}
+    onChange={(mode) => onCartModeChange(item, mode)}
+  />
+</td>
 
       {/* STORES COLUMN */}
       <td style={td}>{storePills}</td>
 
       {/* ACTIONS COLUMN */}
       <td style={td}>
-        <div style={actionContainer}>
-          <div style={qtyGroup}>
-            <button
-              onClick={() => onDecrease(item)}
-              style={qtyBtn}
-              title="Decrease quantity"
-            >
-              -
-            </button>
-            <span style={qtyText}>{item.quantity}</span>
-            <button
-              onClick={() => onIncrease(item)}
-              style={qtyBtn}
-              title="Increase quantity"
-            >
-              +
-            </button>
-          </div>
-
           <div style={editDeleteGroup}>
             <button onClick={() => onEdit(item)} style={editBtn}>
               Edit
@@ -114,7 +131,6 @@ export default function InventoryRow({
               Delete
             </button>
           </div>
-        </div>
       </td>
     </tr>
   );

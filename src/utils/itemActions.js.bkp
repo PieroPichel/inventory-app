@@ -1,7 +1,6 @@
 // ------------------------------------------------------------
 // itemActions.js
-// Centralized item modification helpers
-// (increase/decrease qty, increase/decrease min, delete, cart mode)
+// Centralized item modification helpers (increase, decrease, delete, cart mode)
 // ------------------------------------------------------------
 
 import { databases } from "../appwrite";
@@ -19,7 +18,7 @@ export async function increaseQty(item) {
     });
     return true;
   } catch (err) {
-    console.error("Increase qty failed:", err);
+    console.error("Increase failed:", err);
     return false;
   }
 }
@@ -35,38 +34,7 @@ export async function decreaseQty(item) {
     });
     return true;
   } catch (err) {
-    console.error("Decrease qty failed:", err);
-    return false;
-  }
-}
-
-// ------------------------------------------------------------
-// Increase Min_Stock by 1
-// ------------------------------------------------------------
-export async function increaseMin(item) {
-  try {
-    await databases.updateDocument(DB_ID, COLLECTION_ID, item.$id, {
-      Min_Stock: Number(item.Min_Stock) + 1,
-    });
-    return true;
-  } catch (err) {
-    console.error("Increase min failed:", err);
-    return false;
-  }
-}
-
-// ------------------------------------------------------------
-// Decrease Min_Stock by 1 (never below 0)
-// ------------------------------------------------------------
-export async function decreaseMin(item) {
-  try {
-    const newMin = Math.max(0, Number(item.Min_Stock) - 1);
-    await databases.updateDocument(DB_ID, COLLECTION_ID, item.$id, {
-      Min_Stock: newMin,
-    });
-    return true;
-  } catch (err) {
-    console.error("Decrease min failed:", err);
+    console.error("Decrease failed:", err);
     return false;
   }
 }

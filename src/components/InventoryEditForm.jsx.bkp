@@ -23,9 +23,8 @@ export default function InventoryEditForm({
   const [allStores, setAllStores] = useState([]);
   const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
 
-  // Normalize incoming stores: convert objects → IDs
   useEffect(() => {
-    if (Array.isArray(item.stores) && item.stores.length > 0) {
+    if (Array.isArray(item.stores)) {
       const ids = item.stores.map((s) => (typeof s === "object" ? s.$id : s));
       setItem({ ...item, stores: ids });
     }
@@ -35,10 +34,7 @@ export default function InventoryEditForm({
     const loadStores = async () => {
       try {
         const res = await databases.listDocuments(DB_ID, STORES_COLLECTION_ID);
-        const sorted = [...res.documents].sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
-        setAllStores(sorted);
+        setAllStores(res.documents.sort((a, b) => a.name.localeCompare(b.name)));
       } catch (e) {
         console.error("Failed to load stores:", e);
       }
@@ -65,11 +61,12 @@ export default function InventoryEditForm({
 
   const toggleStore = (storeId) => {
     const current = item.stores || [];
-    if (current.includes(storeId)) {
-      setItem({ ...item, stores: current.filter((id) => id !== storeId) });
-    } else {
-      setItem({ ...item, stores: [...current, storeId] });
-    }
+    setItem({
+      ...item,
+      stores: current.includes(storeId)
+        ? current.filter((id) => id !== storeId)
+        : [...current, storeId],
+    });
   };
 
   const save = async () => {
@@ -98,9 +95,10 @@ export default function InventoryEditForm({
     <SharedModal title="Edit Item" onCancel={onClose}>
       {errorMessage && <div style={errBox}>{errorMessage}</div>}
 
-      {/* Item + Storage Location side-by-side */}
-      <div style={row}>
-        <div style={col}>
+      {/* Two-column grid */}
+      <div style={grid2}>
+
+        <div style={field}>
           <label>Item *:</label>
           <input
             type="text"
@@ -111,7 +109,7 @@ export default function InventoryEditForm({
           />
         </div>
 
-        <div style={col}>
+        <div style={field}>
           <label>Storage Location:</label>
           <input
             type="text"
@@ -123,11 +121,14 @@ export default function InventoryEditForm({
             style={input}
           />
         </div>
+
       </div>
 
-      <div style={row3}>
-        <div style={col3}>
-          <label>Quantity *:</label>
+      {/* Three-column grid for Qty / Min / Unit */}
+      <div style={grid3}>
+
+        <div style={fieldSmall}>
+          <label>Qty *:</label>
           <input
             type="number"
             value={item.quantity}
@@ -136,8 +137,8 @@ export default function InventoryEditForm({
           />
         </div>
 
-        <div style={col3}>
-          <label>Min Stock:</label>
+        <div style={fieldSmall}>
+          <label>Min:</label>
           <input
             type="number"
             value={item.Min_Stock}
@@ -146,7 +147,7 @@ export default function InventoryEditForm({
           />
         </div>
 
-        <div style={col3}>
+        <div style={fieldSmall}>
           <label>Unit *:</label>
           <input
             type="text"
@@ -155,10 +156,13 @@ export default function InventoryEditForm({
             style={input}
           />
         </div>
+
       </div>
 
-      <div style={row}>
-        <div style={col}>
+      {/* Two-column grid */}
+      <div style={grid2}>
+
+        <div style={field}>
           <label>Category *:</label>
           <CategorySelect
             categories={categories}
@@ -169,7 +173,7 @@ export default function InventoryEditForm({
           />
         </div>
 
-        <div style={col}>
+        <div style={field}>
           <label>Subcategory *:</label>
           <SubcategorySelect
             subcategories={subcategories}
@@ -178,10 +182,8 @@ export default function InventoryEditForm({
             onChange={(v) => setItem({ ...item, subcategoryId: v })}
           />
         </div>
-      </div>
 
-      <div style={row}>
-        <div style={col}>
+        <div style={field}>
           <label>Life *:</label>
           <select
             value={item.life}
@@ -194,8 +196,8 @@ export default function InventoryEditForm({
           </select>
         </div>
 
-        <div style={col}>
-          <label>Expiry Date:</label>
+        <div style={field}>
+          <label>Expiry:</label>
           <input
             type="date"
             value={item.expiry_date || ""}
@@ -205,11 +207,12 @@ export default function InventoryEditForm({
             style={input}
           />
         </div>
+
       </div>
 
       {/* Stores */}
       <div style={fullRow}>
-        <label>Stores:</label>
+        <label>Stores (ordered by preference):</label>
 
         <div
           style={tagBox}
@@ -219,7 +222,7 @@ export default function InventoryEditForm({
             <span style={{ color: "#888" }}>Select stores…</span>
           )}
 
-          {(item.stores || []).map((id, index) => {
+          {(item.stores || []).map((id) => {
             const store = allStores.find((s) => s.$id === id);
             if (!store) return null;
 
@@ -262,6 +265,7 @@ export default function InventoryEditForm({
         )}
       </div>
 
+      {/* Notes */}
       <div style={fullRow}>
         <label>Notes:</label>
         <textarea
@@ -280,50 +284,61 @@ export default function InventoryEditForm({
   );
 }
 
-const row = {
-  display: "flex",
-  gap: "10px",
+/* ---------------------- STYLES ---------------------- */
+
+const grid2 = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: "12px",
   marginBottom: "12px",
-  flexWrap: "wrap",
 };
 
-const col = {
-  flex: "1 1 48%",
-  minWidth: "140px",
-};
-
-const row3 = {
-  display: "flex",
-  gap: "10px",
+const grid3 = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr 1fr",
+  gap: "12px",
   marginBottom: "12px",
-  flexWrap: "wrap",
 };
 
-const col3 = {
-  flex: "1 1 30%",
-  minWidth: "100px",
+const field = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  width: "90%",
+};
+
+const fieldSmall = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  width: "90%"
 };
 
 const fullRow = {
-  marginBottom: "12px",
+  marginBottom: "16px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
 };
 
 const input = {
   width: "100%",
-  padding: "8px",
+  padding: "6px",
   background: "#333",
   color: "#fff",
   border: "1px solid #555",
   borderRadius: "4px",
+  fontSize: "0.9rem",
 };
 
 const textarea = {
   width: "100%",
-  padding: "8px",
+  padding: "4px",
   background: "#333",
   color: "#fff",
   border: "1px solid #555",
   borderRadius: "4px",
+  fontSize: "0.9rem",
 };
 
 const tagBox = {
@@ -340,10 +355,10 @@ const tagBox = {
 };
 
 const pill = {
-  background: "#555",
-  padding: "2px 8px",
+  background: "#222",
+  padding: "6px 6px",
   borderRadius: "12px",
-  fontSize: "0.8rem",
+  fontSize: "0.9rem",
 };
 
 const dropdown = {

@@ -2,9 +2,11 @@ import SharedModal from "./SharedModal";
 import { databases, ID } from "../appwrite";
 import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
+import { useEffect, useState } from "react";
 
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
+const STORES_COLLECTION_ID = "stores";
 
 export default function InventoryAddForm({
   item,
@@ -18,6 +20,21 @@ export default function InventoryAddForm({
   categories,
   subcategories,
 }) {
+  const [allStores, setAllStores] = useState([]);
+  const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    const loadStores = async () => {
+      try {
+        const res = await databases.listDocuments(DB_ID, STORES_COLLECTION_ID);
+        setAllStores(res.documents.sort((a, b) => a.name.localeCompare(b.name)));
+      } catch (e) {
+        console.error("Failed to load stores:", e);
+      }
+    };
+    loadStores();
+  }, []);
+
   const validate = (i) => {
     if (!i.Item.trim()) return "Item is required.";
     if (i.Item.length > 20) return "Item must be at most 20 characters.";
@@ -39,6 +56,16 @@ export default function InventoryAddForm({
     return null;
   };
 
+  const toggleStore = (storeId) => {
+    const current = item.stores || [];
+    setItem({
+      ...item,
+      stores: current.includes(storeId)
+        ? current.filter((id) => id !== storeId)
+        : [...current, storeId],
+    });
+  };
+
   const save = async () => {
     const err = validate(item);
     if (err) return setErrorMessage(err);
@@ -49,6 +76,7 @@ export default function InventoryAddForm({
       Min_Stock: item.Min_Stock ? parseFloat(item.Min_Stock) : 0,
       expiry_date: item.expiry_date || null,
       houseId: selectedHouse,
+      stores: item.stores || [],
     };
 
     try {
@@ -60,25 +88,59 @@ export default function InventoryAddForm({
     }
   };
 
+  /* ------------------------------------------------------------
+     CART MODE SWITCH LOGIC (same as Edit form)
+  ------------------------------------------------------------ */
+  const cartMode = item.cart_mode || "none";
+
+  const isManual = cartMode === "manual";
+  const isAuto = cartMode === "auto";
+  const isNone = !isManual && !isAuto;
+
+  const toggleCartMode = () => {
+    if (isAuto) return; // locked
+    if (isManual) {
+      setItem({ ...item, cart_mode: "none" });
+    } else {
+      setItem({ ...item, cart_mode: "manual" });
+    }
+  };
+
   return (
     <SharedModal title="Add New Item" onCancel={onClose}>
       {errorMessage && <div style={errBox}>{errorMessage}</div>}
 
-      {/* ITEM NAME */}
-      <div style={fullRow}>
-        <label>Item *</label>
-        <input
-          type="text"
-          value={item.Item}
-          onChange={(e) => setItem({ ...item, Item: e.target.value })}
-          style={input}
-        />
+      {/* Two-column grid */}
+      <div style={grid2}>
+        <div style={field}>
+          <label>Item *</label>
+          <input
+            type="text"
+            maxLength={20}
+            value={item.Item}
+            onChange={(e) => setItem({ ...item, Item: e.target.value })}
+            style={input}
+          />
+        </div>
+
+        <div style={field}>
+          <label>Storage Location</label>
+          <input
+            type="text"
+            maxLength={20}
+            value={item.storage_location}
+            onChange={(e) =>
+              setItem({ ...item, storage_location: e.target.value })
+            }
+            style={input}
+          />
+        </div>
       </div>
 
-      {/* ROW 1 — Quantity, Min Stock, Unit */}
-      <div style={row3}>
-        <div style={col3}>
-          <label>Quantity *</label>
+      {/* Three-column grid */}
+      <div style={grid3}>
+        <div style={fieldSmall}>
+          <label>Qty *</label>
           <input
             type="number"
             value={item.quantity}
@@ -87,8 +149,8 @@ export default function InventoryAddForm({
           />
         </div>
 
-        <div style={col3}>
-          <label>Min Stock</label>
+        <div style={fieldSmall}>
+          <label>Min</label>
           <input
             type="number"
             value={item.Min_Stock}
@@ -97,7 +159,7 @@ export default function InventoryAddForm({
           />
         </div>
 
-        <div style={col3}>
+        <div style={fieldSmall}>
           <label>Unit *</label>
           <input
             type="text"
@@ -108,9 +170,9 @@ export default function InventoryAddForm({
         </div>
       </div>
 
-      {/* ROW 2 — Category + Subcategory */}
-      <div style={row}>
-        <div style={col}>
+      {/* Two-column grid */}
+      <div style={grid2}>
+        <div style={field}>
           <label>Category *</label>
           <CategorySelect
             categories={categories}
@@ -121,7 +183,7 @@ export default function InventoryAddForm({
           />
         </div>
 
-        <div style={col}>
+        <div style={field}>
           <label>Subcategory *</label>
           <SubcategorySelect
             subcategories={subcategories}
@@ -130,11 +192,8 @@ export default function InventoryAddForm({
             onChange={(v) => setItem({ ...item, subcategoryId: v })}
           />
         </div>
-      </div>
 
-      {/* ROW 3 — Life + Expiry Date */}
-      <div style={row}>
-        <div style={col}>
+        <div style={field}>
           <label>Life *</label>
           <select
             value={item.life}
@@ -147,7 +206,7 @@ export default function InventoryAddForm({
           </select>
         </div>
 
-        <div style={col}>
+        <div style={field}>
           <label>Expiry Date</label>
           <input
             type="date"
@@ -160,20 +219,90 @@ export default function InventoryAddForm({
         </div>
       </div>
 
-      {/* STORAGE LOCATION */}
+      {/* ------------------------------------------------------------
+          STORES + CART SWITCH INLINE (Option C)
+      ------------------------------------------------------------ */}
       <div style={fullRow}>
-        <label>Storage Location</label>
-        <input
-          type="text"
-          value={item.storage_location}
-          onChange={(e) =>
-            setItem({ ...item, storage_location: e.target.value })
-          }
-          style={input}
-        />
+        <div style={storesHeaderRow}>
+          <label>Stores (ordered by preference):</label>
+
+          {/* Unified Cart Switch */}
+          <div
+            style={{
+              ...cartSwitch,
+              background: isAuto
+                ? "#555"
+                : isManual
+                ? "#2a4"
+                : "#333",
+              borderColor: isAuto
+                ? "#777"
+                : isManual
+                ? "#4f8"
+                : "#666",
+              opacity: isAuto ? 0.6 : 1,
+              cursor: isAuto ? "not-allowed" : "pointer",
+            }}
+            onClick={toggleCartMode}
+          >
+            {isManual && "🛒 Manual"}
+            {isAuto && "🛒 Auto"}
+            {isNone && "Not in cart"}
+          </div>
+        </div>
+
+        <div
+          style={tagBox}
+          onClick={() => setStoreDropdownOpen(!storeDropdownOpen)}
+        >
+          {(item.stores || []).length === 0 && (
+            <span style={{ color: "#888" }}>Select stores…</span>
+          )}
+
+          {(item.stores || []).map((id) => {
+            const store = allStores.find((s) => s.$id === id);
+            if (!store) return null;
+
+            return (
+              <span
+                key={id}
+                style={{
+                  ...pill,
+                  color: store.colour || "#fff",
+                }}
+              >
+                {store.icon ? `${store.icon} ` : ""}
+                {store.name}
+              </span>
+            );
+          })}
+        </div>
+
+        {storeDropdownOpen && (
+          <div style={dropdown}>
+            {allStores.map((store) => {
+              const selected = (item.stores || []).includes(store.$id);
+              return (
+                <div
+                  key={store.$id}
+                  style={{
+                    padding: "6px 10px",
+                    cursor: "pointer",
+                    background: selected ? "#444" : "#222",
+                    color: store.colour || "#fff",
+                  }}
+                  onClick={() => toggleStore(store.$id)}
+                >
+                  {store.icon ? `${store.icon} ` : ""}
+                  {store.name}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* NOTES */}
+      {/* Notes */}
       <div style={fullRow}>
         <label>Notes</label>
         <textarea
@@ -181,11 +310,10 @@ export default function InventoryAddForm({
           onChange={(e) =>
             setItem({ ...item, item_notes: e.target.value })
           }
-          style={textarea}
+          style={{ ...textarea, minHeight: "40px" }}
         />
       </div>
 
-      {/* SAVE BUTTON */}
       <button onClick={save} style={saveBtn}>
         Save
       </button>
@@ -195,51 +323,94 @@ export default function InventoryAddForm({
 
 /* ---------------------- STYLES ---------------------- */
 
-const row = {
-  display: "flex",
-  gap: "10px",
+const grid2 = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: "12px",
   marginBottom: "12px",
-  flexWrap: "wrap",
 };
 
-const col = {
-  flex: "1 1 48%",
-  minWidth: "140px",
-};
-
-const row3 = {
-  display: "flex",
-  gap: "10px",
+const grid3 = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr 1fr",
+  gap: "12px",
   marginBottom: "12px",
-  flexWrap: "wrap",
 };
 
-const col3 = {
-  flex: "1 1 30%",
-  minWidth: "100px",
+const field = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  width: "90%",
+};
+
+const fieldSmall = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  width: "90%",
 };
 
 const fullRow = {
-  marginBottom: "12px",
+  marginBottom: "16px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+};
+
+const storesHeaderRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
 };
 
 const input = {
   width: "100%",
-  padding: "8px",
+  padding: "6px",
   background: "#333",
   color: "#fff",
   border: "1px solid #555",
   borderRadius: "4px",
+  fontSize: "0.9rem",
 };
 
 const textarea = {
   width: "100%",
-  padding: "8px",
+  padding: "4px",
   background: "#333",
   color: "#fff",
   border: "1px solid #555",
   borderRadius: "4px",
   minHeight: "80px",
+};
+
+const tagBox = {
+  width: "100%",
+  minHeight: "38px",
+  background: "#333",
+  border: "1px solid #555",
+  borderRadius: "4px",
+  padding: "6px",
+  display: "flex",
+  gap: "6px",
+  flexWrap: "wrap",
+  cursor: "pointer",
+};
+
+const pill = {
+  background: "#222",
+  padding: "6px 6px",
+  borderRadius: "12px",
+  fontSize: "0.9rem",
+};
+
+const dropdown = {
+  background: "#222",
+  border: "1px solid #555",
+  borderRadius: "4px",
+  marginTop: "4px",
+  maxHeight: "150px",
+  overflowY: "auto",
 };
 
 const errBox = {
@@ -259,4 +430,14 @@ const saveBtn = {
   borderRadius: "6px",
   cursor: "pointer",
   marginTop: "10px",
+};
+
+/* Unified Cart Switch */
+const cartSwitch = {
+  padding: "6px 14px",
+  borderRadius: "20px",
+  border: "1px solid #555",
+  color: "#fff",
+  fontSize: "0.85rem",
+  userSelect: "none",
 };

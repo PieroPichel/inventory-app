@@ -1,5 +1,14 @@
 export const RELEASE_NOTES = [
   {
+    version: "1.1.2",
+    date: "2026-02-11",
+    notes: [
+      "Added full Min Stock controls (increase/decrease) across Card and Table views",
+      "Unified Cart Mode UI"
+      "Centralized all new Min and Cart logic in itemActions.js"
+    ]
+  },
+  {
     version: "1.1.1",
     date: "2026-02-09",
     notes: [

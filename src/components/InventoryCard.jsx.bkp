@@ -1,5 +1,7 @@
 // components/InventoryCard.jsx
 
+import CartButtonSwitch from "./CartButtonSwitch";
+
 export default function InventoryCard({
   item,
   categoryName,
@@ -10,10 +12,43 @@ export default function InventoryCard({
   onDelete,
   onIncrease,
   onDecrease,
+  onCartModeChange,
 }) {
+  // Normalize relation objects
+  const stores = Array.isArray(item.stores)
+    ? item.stores
+        .map((s) => (typeof s === "object" ? s : null))
+        .filter(Boolean)
+    : [];
+
+  const storePills =
+    stores.length > 0 ? (
+      <div style={storePillRow}>
+        {stores.map((store) => (
+          <span
+            key={store.$id}
+            style={{
+              display: "inline-block",
+              marginRight: "4px",
+              marginBottom: "3px",
+              padding: "2px 6px",
+              borderRadius: "10px",
+              background: "#333",
+              color: store.colour || "#fff",
+              fontSize: "0.75rem",
+            }}
+          >
+            {store.icon ? `${store.icon} ` : ""}
+            {store.name}
+          </span>
+        ))}
+      </div>
+    ) : (
+      <span style={{ color: "#777", fontSize: "0.8rem" }}>—</span>
+    );
+
   return (
     <div style={card}>
-      {/* Header row: Item name + Qty controls */}
       <div style={headerRow}>
         <div style={itemName}>
           {item.Item}
@@ -43,7 +78,6 @@ export default function InventoryCard({
         </div>
       </div>
 
-      {/* Details */}
       <div style={infoRow}>
         <span style={label}>Category:</span> {categoryName || "—"}
       </div>
@@ -68,14 +102,35 @@ export default function InventoryCard({
         <span style={label}>Expiry:</span> {formatDate(item.expiry_date)}
       </div>
 
-      {/* Buttons */}
+      <div style={infoRow}>
+        <span style={label}>Cart:</span>
+        {item.cart_mode === "manual"
+          ? "🛒 - Manual"
+          : item.cart_mode === "auto"
+          ? "🛒 - Auto"
+          : "—"}
+      </div>
+
+      <div style={infoRow}>
+        <span style={label}>Stores:</span>
+        {storePills}
+      </div>
+
+      {/* BUTTONS + CART SWITCH */}
       <div style={buttonRow}>
         <button onClick={() => onEdit(item)} style={editBtn}>
           Edit
         </button>
+
         <button onClick={() => onDelete(item)} style={deleteBtn}>
           Delete
         </button>
+
+        {/* NEW CART SWITCH */}
+        <CartButtonSwitch
+          value={item.cart_mode}
+          onChange={(mode) => onCartModeChange(item, mode)}
+        />
       </div>
     </div>
   );
@@ -145,11 +200,19 @@ const label = {
   marginRight: "4px",
 };
 
+const storePillRow = {
+  display: "inline-flex",
+  flexWrap: "wrap",
+  gap: "2px 4px",
+  marginLeft: "4px",
+};
+
 const buttonRow = {
   display: "flex",
   justifyContent: "flex-end",
   gap: "10px",
   marginTop: "12px",
+  alignItems: "center",
 };
 
 const editBtn = {

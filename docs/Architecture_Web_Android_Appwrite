@@ -1,0 +1,60 @@
+                         ┌──────────────────────────┐
+                         │        Appwrite          │
+                         │  (Cloud Backend API)     │
+                         │                          │
+                         │  • Auth (Login)          │
+                         │  • Databases             │
+                         │  • Collections:          │
+                         │      - Items             │
+                         │      - Houses            │
+                         │      - Categories        │
+                         │      - Stores            │
+                         │  • Storage (images)      │
+                         └───────────▲──────────────┘
+                                     │
+                                     │ Online Sync
+                                     │
+        ┌────────────────────────────┼────────────────────────────┐
+        │                            │                            │
+        │                            │                            │
+┌───────┴────────┐        ┌─────────┴──────────┐       ┌─────────┴──────────┐
+│   Web Client    │        │   Android App       │       │   Future iOS App    │
+│ (React + Vite)  │        │ (React Native)      │       │ (Optional later)    │
+│                 │        │                     │       │                     │
+│ • Login/Register│        │ • Login only        │       │ • Login only        │
+│ • House select  │        │ • House select      │       │ • House select      │
+│ • Card/Table UI │        │ • Card View UI      │       │ • Card View UI      │
+│ • Qty/Min/Cart  │        │ • Qty/Min/Cart      │       │ • Qty/Min/Cart      │
+│ • Alerts        │        │ • Alerts            │       │ • Alerts            │
+│ • Online only   │        │ • Offline-first     │       │ • Offline-first     │
+└───────▲────────┘        └─────────▲──────────┘       └─────────▲──────────┘
+        │                             │                             │
+        │                             │                             │
+        │                             │                             │
+        │                     Local Mobile Database                  │
+        │                     (SQLite / MMKV / WatermelonDB)         │
+        │                             │                             │
+        │                             │                             │
+        │                     ┌────────┴────────┐                   │
+        │                     │ Offline Cache    │                   │
+        │                     │ & Change Queue   │                   │
+        │                     │                  │                   │
+        │                     │ • Items          │                   │
+        │                     │ • Houses         │                   │
+        │                     │ • Categories     │                   │
+        │                     │ • Stores         │                   │
+        │                     │ • Pending edits  │                   │
+        │                     └────────▲─────────┘                   │
+        │                              │                             │
+        │                              │ Sync Engine                 │
+        │                              │                             │
+        │                     ┌────────┴──────────┐                  │
+        │                     │  Sync Manager      │                  │
+        │                     │                    │                  │
+        │                     │ • Detects online   │                  │
+        │                     │ • Pushes changes   │                  │
+        │                     │ • Pulls updates    │                  │
+        │                     │ • Conflict rules   │                  │
+        │                     └────────┬──────────┘                  │
+        │                              │                             │
+        └──────────────────────────────┴─────────────────────────────┘

@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import Manage from "./pages/Manage.jsx";
 import InventoryTable from "./components/InventoryTable.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import TopBar from "./components/TopBar.jsx";
@@ -17,6 +18,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/manage" element={<Manage />} />
       <Route path="/register" element={<Register />} />
 
       <Route

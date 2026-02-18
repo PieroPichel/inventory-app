@@ -1,5 +1,13 @@
 export const RELEASE_NOTES = [
   {
+    version: "1.1.4",
+    date: "2026-02-18",
+    notes: [
+      "Manage House: Added Stores Visibility (Filter)",
+      "Add/Edit items reflects preferences of Stores Visibility"
+    ]
+  },
+  {
     version: "1.1.3",
     date: "2026-02-17",
     notes: [

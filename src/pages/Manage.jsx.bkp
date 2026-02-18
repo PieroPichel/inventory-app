@@ -6,7 +6,6 @@ import { Query } from "appwrite";
 const DB_ID = "697dcef40009d64e2fe1";
 const HOUSES_COLLECTION = "houses";
 const USER_HOUSES_COLLECTION = "user_houses";
-const STORES_COLLECTION_ID = "stores";
 
 export default function Manage() {
   const navigate = useNavigate();
@@ -15,13 +14,10 @@ export default function Manage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [stores, setStores] = useState([]);
-  const [disabledStores, setDisabledStores] = useState([]);
-
   const houseId = localStorage.getItem("currentHouseId");
 
   // ------------------------------------------------------------
-  // LOAD HOUSE + CHECK ROLE + LOAD STORES
+  // LOAD HOUSE + CHECK ROLE
   // ------------------------------------------------------------
   useEffect(() => {
     async function load() {
@@ -34,7 +30,7 @@ export default function Manage() {
           USER_HOUSES_COLLECTION,
           [
             Query.equal("userId", user.$id),
-            Query.equal("houseId", houseId),
+            Query.equal("houseId", houseId)
           ]
         );
 
@@ -50,14 +46,6 @@ export default function Manage() {
         const doc = await databases.getDocument(DB_ID, HOUSES_COLLECTION, houseId);
         setHouse(doc);
         setName(doc.name);
-        setDisabledStores(doc.disabledStores || []);
-
-        // 3. Load global stores
-        const storeDocs = await databases.listDocuments(DB_ID, STORES_COLLECTION_ID);
-        const sortedStores = storeDocs.documents.sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
-        setStores(sortedStores);
       } catch (err) {
         console.error("Failed to load manage page:", err);
         navigate("/");
@@ -70,7 +58,7 @@ export default function Manage() {
   }, [houseId, navigate]);
 
   // ------------------------------------------------------------
-  // SAVE HOUSE NAME
+  // SAVE CHANGES
   // ------------------------------------------------------------
   const save = async () => {
     if (!house) return;
@@ -81,40 +69,13 @@ export default function Manage() {
         name,
       });
 
-      alert("House preferences updated!");
+      alert("House name updated!");
       navigate("/");
     } catch (err) {
       console.error("Failed to update house:", err);
       alert("Error updating house");
     } finally {
       setSaving(false);
-    }
-  };
-
-  // ------------------------------------------------------------
-  // TOGGLE STORE BLACKLIST
-  // ------------------------------------------------------------
-  const toggleStore = async (storeId) => {
-    if (!house) return;
-
-    let updated;
-    if (disabledStores.includes(storeId)) {
-      // remove from blacklist → store becomes visible
-      updated = disabledStores.filter((id) => id !== storeId);
-    } else {
-      // add to blacklist → store becomes hidden
-      updated = [...disabledStores, storeId];
-    }
-
-    setDisabledStores(updated);
-
-    try {
-      await databases.updateDocument(DB_ID, HOUSES_COLLECTION, house.$id, {
-        disabledStores: updated,
-      });
-    } catch (err) {
-      console.error("Failed to update disabledStores:", err);
-      alert("Error updating store visibility");
     }
   };
 
@@ -191,54 +152,8 @@ export default function Manage() {
           onChange={(e) => setName(e.target.value)}
           style={input}
         />
-
-        {name.length > 28 && (
-          <div
-            style={{
-              color: "#ff8888",
-              fontSize: "12px",
-              marginTop: "-15px",
-              marginBottom: "10px",
-            }}
-          >
-            Maximum 30 characters
-          </div>
-        )}
-
-        {/* STORE VISIBILITY SECTION */}
-        <h3 style={{ ...sectionTitle, marginTop: "24px" }}>Store Visibility</h3>
-        <p style={{ color: "#aaa", fontSize: "13px", marginTop: "-10px" }}>
-          Uncheck stores you don&apos;t want to appear when adding/editing items
-          for this house.
-        </p>
-
-        {stores.length === 0 && (
-          <div style={{ color: "#888", fontSize: "13px", marginBottom: "10px" }}>
-            No stores found.
-          </div>
-        )}
-
-        {stores.map((store) => (
-          <label
-            key={store.$id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "6px",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={!disabledStores.includes(store.$id)}
-              onChange={() => toggleStore(store.$id)}
-            />
-            <span>
-              {store.icon ? `${store.icon} ` : ""}
-              {store.name}
-            </span>
-          </label>
-        ))}
+        
+        { name.length > 28 && ( <div style={{ color: "#ff8888", fontSize: "12px", marginTop: "-15px", marginBottom: "10px" }}> Maximum 30 characters </div> )}
 
         <button style={saveButton} onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save Changes"}

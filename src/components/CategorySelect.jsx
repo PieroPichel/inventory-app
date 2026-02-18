@@ -9,6 +9,14 @@ const selectStyle = {
 };
 
 export default function CategorySelect({ categories, value, onChange }) {
+  // Support both object and array formats
+  const list = Array.isArray(categories)
+    ? categories.map((c) => ({ id: c.$id, name: c.name }))
+    : Object.entries(categories).map(([id, name]) => ({
+        id,
+        name,
+      }));
+
   return (
     <select
       value={value}
@@ -16,9 +24,9 @@ export default function CategorySelect({ categories, value, onChange }) {
       style={selectStyle}
     >
       <option value="">Select category</option>
-      {Object.entries(categories).map(([id, name]) => (
-        <option key={id} value={id}>
-          {name}
+      {list.map((cat) => (
+        <option key={cat.id} value={cat.id}>
+          {cat.name}
         </option>
       ))}
     </select>

@@ -57,7 +57,7 @@ export default function InventoryTable({
     Unit: "",
     storage_location: "",
     expiry_date: "",
-    life: "Short-Life",
+    life: "Non-Perishable",
     stores: [],
   };
 

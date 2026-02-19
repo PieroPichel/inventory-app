@@ -4,6 +4,7 @@ import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
 import CartButtonSwitch from "./CartButtonSwitch";
 import { useEffect, useState } from "react";
+import StockWishSwitch from "./StockWishSwitch";
 
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
@@ -25,6 +26,19 @@ export default function InventoryAddForm({
   const [allStores, setAllStores] = useState([]);
   const [visibleStores, setVisibleStores] = useState([]);
   const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
+
+  // ------------------------------------------------------------
+  // WISH LIST SWITCH → auto adjust fields
+  // ------------------------------------------------------------
+  useEffect(() => {
+    if (item.stock_mode === "wish") {
+      setItem((prev) => ({
+        ...prev,
+        quantity: "0",
+        cart_mode: "manual",
+      }));
+    }
+  }, [item.stock_mode]);
 
   // ------------------------------------------------------------
   // LOAD STORES + HOUSE BLACKLIST
@@ -55,17 +69,22 @@ export default function InventoryAddForm({
     load();
   }, [selectedHouse]);
 
-// Ensure defaults only once on mount
-useEffect(() => {
-  setItem((prev) => ({
-    ...prev,
-    categoryId: prev.categoryId || "",
-    subcategoryId: prev.subcategoryId || "",
-  }));
-}, []);
+  // ------------------------------------------------------------
+  // ENSURE DEFAULTS ON MOUNT
+  // ------------------------------------------------------------
+  useEffect(() => {
+    setItem((prev) => ({
+      ...prev,
+      categoryId: prev.categoryId || "",
+      subcategoryId: prev.subcategoryId || "",
+      life: prev.life || "Undefined",
+      stock_mode: prev.stock_mode || "stock",
+      cart_mode: prev.cart_mode || "none",
+    }));
+  }, []);
 
   // ------------------------------------------------------------
-  // VALIDATION (subcategory optional)
+  // VALIDATION
   // ------------------------------------------------------------
   const validate = (i) => {
     if (!i.Item.trim()) return "Item is required.";
@@ -73,18 +92,15 @@ useEffect(() => {
 
     if (!i.categoryId) return "Category is required.";
 
-    // Subcategory optional
-
     if (isNaN(parseFloat(i.quantity))) return "Quantity must be a number.";
     if (parseFloat(i.quantity) < 0) return "Quantity cannot be negative.";
 
     if (i.Min_Stock && parseFloat(i.Min_Stock) < 0)
       return "Min Stock cannot be negative.";
 
-    if (!i.Unit.trim()) return "Unit is required.";
     if (i.Unit.length > 10) return "Unit must be at most 10 characters.";
 
-    if (!i.life.trim()) return "Life is required.";
+    // Life optional now
 
     return null;
   };
@@ -103,7 +119,7 @@ useEffect(() => {
   };
 
   // ------------------------------------------------------------
-  // SAVE ITEM
+  // SAVE ITEM (sanitize payload)
   // ------------------------------------------------------------
   const save = async () => {
     const err = validate(item);
@@ -118,6 +134,9 @@ useEffect(() => {
       stores: item.stores || [],
     };
 
+    // REMOVE UI-ONLY FIELD
+    delete payload.stock_mode;
+
     try {
       await databases.createDocument(DB_ID, COLLECTION_ID, ID.unique(), payload);
       onCreated();
@@ -128,7 +147,34 @@ useEffect(() => {
   };
 
   return (
-    <SharedModal title="Add New Item" onCancel={onClose}>
+    <SharedModal
+      title={
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Add New Item</span>
+
+          <StockWishSwitch
+            value={item.stock_mode || "stock"}
+            onChange={(mode) => {
+              if (mode === "wish") {
+                setItem({
+                  ...item,
+                  stock_mode: "wish",
+                  quantity: "0",
+                  cart_mode: "manual",
+                });
+              } else {
+                setItem({
+                  ...item,
+                  stock_mode: "stock",
+                  cart_mode: "none",
+                });
+              }
+            }}
+          />
+        </div>
+      }
+      onCancel={onClose}
+    >
       {errorMessage && <div style={errBox}>{errorMessage}</div>}
 
       {/* Two-column grid */}
@@ -181,7 +227,7 @@ useEffect(() => {
         </div>
 
         <div style={fieldSmall}>
-          <label>Unit *</label>
+          <label>Unit</label>
           <input
             type="text"
             value={item.Unit}
@@ -205,7 +251,7 @@ useEffect(() => {
         </div>
 
         <div style={field}>
-          <label>Subcategory</label> {/* ← optional */}
+          <label>Subcategory</label>
           <SubcategorySelect
             subcategories={subcategories}
             categoryId={item.categoryId}
@@ -215,7 +261,7 @@ useEffect(() => {
         </div>
 
         <div style={field}>
-          <label>Life *</label>
+          <label>Life</label>
           <select
             value={item.life}
             onChange={(e) => setItem({ ...item, life: e.target.value })}
@@ -240,9 +286,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------
-          STORES + CART SWITCH INLINE
-      ------------------------------------------------------------ */}
+      {/* STORES + CART SWITCH */}
       <div style={fullRow}>
         <div style={storesHeaderRow}>
           <label>Stores (ordered by preference):</label>

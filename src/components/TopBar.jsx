@@ -281,7 +281,7 @@ export default function TopBar({ onHouseChange, onExport, onAdminExport }) {
         <div style={notesBox}>
           <h4 style={{ marginTop: 0 }}>Recent Releases</h4>
 
-          {RELEASE_NOTES.slice(0, 9).map((entry) => (
+          {RELEASE_NOTES.slice(0, 20).map((entry) => (
             <div key={entry.version} style={{ marginBottom: "12px" }}>
               <strong>{entry.version}</strong>{" "}
               <span style={{ color: "#aaa" }}>— {entry.date}</span>

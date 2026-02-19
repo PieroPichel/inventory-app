@@ -1,10 +1,19 @@
 export const RELEASE_NOTES = [
   {
+    version: "1.1.5",
+    date: "2026-02-19",
+    notes: [
+      "New Wishlist switch when adding new item",
+      "Updated mandatory fields (less restricted)"
+    ]
+  },
+  {
     version: "1.1.4",
     date: "2026-02-18",
     notes: [
       "Manage House: Added Stores Visibility (Filter)",
-      "Add/Edit items reflects preferences of Stores Visibility"
+      "Add/Edit items reflects preferences of Stores Visibility",
+      "Adjustments in default values for new entries and minor layout"
     ]
   },
   {

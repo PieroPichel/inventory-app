@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 const DB_ID = "697dcef40009d64e2fe1";
 const COLLECTION_ID = "inventory_items";
 const STORES_COLLECTION_ID = "stores";
+const HOUSES_COLLECTION_ID = "houses";
 
 export default function InventoryAddForm({
   item,
@@ -22,26 +23,57 @@ export default function InventoryAddForm({
   subcategories,
 }) {
   const [allStores, setAllStores] = useState([]);
+  const [visibleStores, setVisibleStores] = useState([]);
   const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
 
+  // ------------------------------------------------------------
+  // LOAD STORES + HOUSE BLACKLIST
+  // ------------------------------------------------------------
   useEffect(() => {
-    const loadStores = async () => {
+    const load = async () => {
       try {
         const res = await databases.listDocuments(DB_ID, STORES_COLLECTION_ID);
-        setAllStores(res.documents.sort((a, b) => a.name.localeCompare(b.name)));
+        const sorted = res.documents.sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+        setAllStores(sorted);
+
+        const house = await databases.getDocument(
+          DB_ID,
+          HOUSES_COLLECTION_ID,
+          selectedHouse
+        );
+
+        const disabled = house.disabledStores || [];
+        const filtered = sorted.filter((s) => !disabled.includes(s.$id));
+        setVisibleStores(filtered);
       } catch (e) {
-        console.error("Failed to load stores:", e);
+        console.error("Failed to load stores or house prefs:", e);
       }
     };
-    loadStores();
-  }, []);
 
+    load();
+  }, [selectedHouse]);
+
+// Ensure defaults only once on mount
+useEffect(() => {
+  setItem((prev) => ({
+    ...prev,
+    categoryId: prev.categoryId || "",
+    subcategoryId: prev.subcategoryId || "",
+  }));
+}, []);
+
+  // ------------------------------------------------------------
+  // VALIDATION (subcategory optional)
+  // ------------------------------------------------------------
   const validate = (i) => {
     if (!i.Item.trim()) return "Item is required.";
     if (i.Item.length > 20) return "Item must be at most 20 characters.";
 
     if (!i.categoryId) return "Category is required.";
-    if (!i.subcategoryId) return "Subcategory is required.";
+
+    // Subcategory optional
 
     if (isNaN(parseFloat(i.quantity))) return "Quantity must be a number.";
     if (parseFloat(i.quantity) < 0) return "Quantity cannot be negative.";
@@ -57,6 +89,9 @@ export default function InventoryAddForm({
     return null;
   };
 
+  // ------------------------------------------------------------
+  // STORE SELECTION
+  // ------------------------------------------------------------
   const toggleStore = (storeId) => {
     const current = item.stores || [];
     setItem({
@@ -67,6 +102,9 @@ export default function InventoryAddForm({
     });
   };
 
+  // ------------------------------------------------------------
+  // SAVE ITEM
+  // ------------------------------------------------------------
   const save = async () => {
     const err = validate(item);
     if (err) return setErrorMessage(err);
@@ -88,6 +126,7 @@ export default function InventoryAddForm({
       alert("Add failed — check Appwrite permissions.");
     }
   };
+
   return (
     <SharedModal title="Add New Item" onCancel={onClose}>
       {errorMessage && <div style={errBox}>{errorMessage}</div>}
@@ -166,7 +205,7 @@ export default function InventoryAddForm({
         </div>
 
         <div style={field}>
-          <label>Subcategory *</label>
+          <label>Subcategory</label> {/* ← optional */}
           <SubcategorySelect
             subcategories={subcategories}
             categoryId={item.categoryId}
@@ -202,7 +241,7 @@ export default function InventoryAddForm({
       </div>
 
       {/* ------------------------------------------------------------
-          STORES + CART SWITCH INLINE (Option C)
+          STORES + CART SWITCH INLINE
       ------------------------------------------------------------ */}
       <div style={fullRow}>
         <div style={storesHeaderRow}>
@@ -243,7 +282,7 @@ export default function InventoryAddForm({
 
         {storeDropdownOpen && (
           <div style={dropdown}>
-            {allStores.map((store) => {
+            {visibleStores.map((store) => {
               const selected = (item.stores || []).includes(store.$id);
               return (
                 <div
@@ -264,6 +303,7 @@ export default function InventoryAddForm({
           </div>
         )}
       </div>
+
       {/* Notes */}
       <div style={fullRow}>
         <label>Notes</label>
@@ -343,7 +383,7 @@ const textarea = {
   color: "#fff",
   border: "1px solid #555",
   borderRadius: "4px",
-  minHeight: "80px",
+  fontSize: "0.9rem",
 };
 
 const tagBox = {

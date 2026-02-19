@@ -37,19 +37,29 @@ export default function InventoryEditForm({
   }, []);
 
   // ------------------------------------------------------------
+  // ENSURE DEFAULTS (Life optional, stock_mode UI-only)
+  // ------------------------------------------------------------
+  useEffect(() => {
+    setItem((prev) => ({
+      ...prev,
+      life: prev.life || "Undefined",
+      stock_mode: prev.stock_mode || "stock",
+      cart_mode: prev.cart_mode || "none",
+    }));
+  }, []);
+
+  // ------------------------------------------------------------
   // LOAD STORES + HOUSE BLACKLIST
   // ------------------------------------------------------------
   useEffect(() => {
     const load = async () => {
       try {
-        // 1. Load all stores
         const res = await databases.listDocuments(DB_ID, STORES_COLLECTION_ID);
         const sorted = res.documents.sort((a, b) =>
           a.name.localeCompare(b.name)
         );
         setAllStores(sorted);
 
-        // 2. Load house to get disabledStores
         const house = await databases.getDocument(
           DB_ID,
           HOUSES_COLLECTION_ID,
@@ -57,8 +67,6 @@ export default function InventoryEditForm({
         );
 
         const disabled = house.disabledStores || [];
-
-        // 3. Filter visible stores
         const filtered = sorted.filter((s) => !disabled.includes(s.$id));
         setVisibleStores(filtered);
       } catch (e) {
@@ -70,7 +78,7 @@ export default function InventoryEditForm({
   }, [selectedHouse]);
 
   // ------------------------------------------------------------
-  // VALIDATION (subcategory now optional)
+  // VALIDATION (subcategory optional)
   // ------------------------------------------------------------
   const validate = (i) => {
     if (!i.Item.trim()) return "Item is required.";
@@ -78,18 +86,13 @@ export default function InventoryEditForm({
 
     if (!i.categoryId) return "Category is required.";
 
-    // Subcategory is now optional — removed validation
-
     if (isNaN(parseFloat(i.quantity))) return "Quantity must be a number.";
     if (parseFloat(i.quantity) < 0) return "Quantity cannot be negative.";
 
     if (i.Min_Stock && parseFloat(i.Min_Stock) < 0)
       return "Min Stock cannot be negative.";
 
-    if (!i.Unit.trim()) return "Unit is required.";
     if (i.Unit.length > 10) return "Unit must be at most 10 characters.";
-
-    if (!i.life.trim()) return "Life is required.";
 
     if (i.storage_location && i.storage_location.length > 20)
       return "Storage Location must be at most 20 characters.";
@@ -111,7 +114,7 @@ export default function InventoryEditForm({
   };
 
   // ------------------------------------------------------------
-  // SAVE ITEM
+  // SAVE ITEM (sanitize payload)
   // ------------------------------------------------------------
   const save = async () => {
     const err = validate(item);
@@ -125,6 +128,9 @@ export default function InventoryEditForm({
       houseId: selectedHouse,
       stores: item.stores || [],
     };
+
+    // REMOVE UI-ONLY FIELD
+    delete payload.stock_mode;
 
     try {
       await databases.updateDocument(DB_ID, COLLECTION_ID, item.$id, payload);
@@ -189,7 +195,7 @@ export default function InventoryEditForm({
         </div>
 
         <div style={fieldSmall}>
-          <label>Unit *</label>
+          <label>Unit</label>
           <input
             type="text"
             value={item.Unit}
@@ -213,7 +219,7 @@ export default function InventoryEditForm({
         </div>
 
         <div style={field}>
-          <label>Subcategory</label> {/* ← no longer required */}
+          <label>Subcategory</label>
           <SubcategorySelect
             subcategories={subcategories}
             categoryId={item.categoryId}
@@ -223,7 +229,7 @@ export default function InventoryEditForm({
         </div>
 
         <div style={field}>
-          <label>Life *</label>
+          <label>Life</label>
           <select
             value={item.life}
             onChange={(e) => setItem({ ...item, life: e.target.value })}
@@ -248,9 +254,7 @@ export default function InventoryEditForm({
         </div>
       </div>
 
-      {/* ------------------------------------------------------------
-          STORES + CART SWITCH INLINE
-      ------------------------------------------------------------ */}
+      {/* STORES + CART SWITCH */}
       <div style={fullRow}>
         <div style={storesHeaderRow}>
           <label>Stores (ordered by preference):</label>
@@ -330,6 +334,7 @@ export default function InventoryEditForm({
     </SharedModal>
   );
 }
+
 
 /* ---------------------- STYLES ---------------------- */
 

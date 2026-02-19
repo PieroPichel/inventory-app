@@ -57,7 +57,7 @@ export default function InventoryTable({
     Unit: "",
     storage_location: "",
     expiry_date: "",
-    life: "Non-Perishable",
+    life: "Undefined",
     stores: [],
   };
 
@@ -68,6 +68,7 @@ export default function InventoryTable({
   const [errorMessage, setErrorMessage] = useState("");
 
   const LIFE_OPTIONS = [
+    "Undefined",
     "Short-Life",
     "Medium-Life",
     "Long-Life",
